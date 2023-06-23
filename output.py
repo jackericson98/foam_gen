@@ -1,17 +1,17 @@
 import os
 
 
-def write_pdb(atoms, file_name, directory=None):
+def write_pdb(bubbles, file_name, directory=None):
     """
     Creates a pdb file type in the current working directory
-    :param atoms: List of atom type objects for writing
+    :param bubbles: List of atom type objects for writing
     :param file_name: Name of the output file
     :param sys: System object used for writing the whole pbd file
     :param directory: Output directory for the file
     :return: Writes a pdb file for the set of atoms
     """
     # Catch empty atoms cases
-    if atoms is None or len(atoms) == 0:
+    if bubbles is None or len(bubbles) == 0:
         return
     # Make note of the starting directory
     start_dir = os.getcwd()
@@ -22,9 +22,7 @@ def write_pdb(atoms, file_name, directory=None):
     # Open the file for writing
     with open(file_name + ".pdb", 'w') as pdb_file:
         # Go through each atom in the system
-        for i in atoms:
-            a = i
-            i = a['num']
+        for i, a in bubbles.iterrows():
             # Get the location string
             loc = ["{:.3f}".format(_) for _ in a['loc']]
             # Get the information from the atom in writable format
@@ -70,10 +68,10 @@ def set_pymol_atoms(bubbles):
     """
     special_radii = {}
     # Check to see if the atoms in the system are all accounted for
-    for bubble in bubbles.iterrows():
-        special_radii[bubble['res_name']] = {bubble['name']: round(bubble['rad'], 2)}
+    for i, bubble in bubbles.iterrows():
+        special_radii[bubble['name']] = {bubble['name']: round(bubble['rad'], 2)}
     # Create the file
-    with open('set_atoms.pml', 'w') as file:
+    with open('Data/set_atoms.pml', 'w') as file:
         # Change the radii for special atoms
         for res in special_radii:
             for atom in special_radii[res]:
