@@ -94,3 +94,11 @@ def calc_box(self, locs, rads):
     min_vert, max_vert = max_vert - r_box * self.box_size, min_vert + r_box * self.box_size
     # Return the list of array turned list vertices
     self.box = [[round(_, 3) for _ in min_vert], [round(_, 3) for _ in max_vert]]
+
+
+def pdb_line(atom="ATOM", ser_num=0, name="", alt_loc=" ", res_name="", chain="A", res_seq=0, cfir="", x=0, y=0, z=0,
+             occ=1, tfact=0, seg_id="", elem="h", charge=""):
+    if chain == 'Z':
+        chain = ' '
+    return "{:<6}{:>5} {:<4}{:1}{:>3} {:^1}{:>4}{:1}   {:>8.3f}{:>8.3f}{:>8.3f}{:>6.2f}{:>6.2f}      {:<4}{:>2}{}\n"\
+        .format(atom, ser_num, name, alt_loc, res_name, chain, res_seq, cfir, x, y, z, occ, tfact, seg_id, elem, charge)

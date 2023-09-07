@@ -1,9 +1,24 @@
 from draw import draw_line
 import numpy as np
 import os
+from calcs import pdb_line
 
 
-def write_pdb(bubbles, file_name, directory=None, foam_info=''):
+def output_all(bubbles, verts, dir=None):
+    if dir is None:
+        # Write the output files
+        file_name = 'foam'
+        my_dir = set_sys_dir('Data/user_data/' + file_name)
+    else:
+        file_name = 'foam'
+        my_dir = set_sys_dir('foam')
+
+    write_pdb(bubbles, file_name, directory=my_dir)
+    set_pymol_atoms(bubbles, directory=my_dir)
+    write_box(verts, file_name='retaining_box', directory=my_dir)
+
+
+def write_pdb(bubbles, file_name, directory=None, box=None):
     """
     Creates a pdb file type in the current working directory
     :param bubbles: List of atom type objects for writing
@@ -20,46 +35,29 @@ def write_pdb(bubbles, file_name, directory=None, foam_info=''):
     # Change to the specified directory
     if directory is not None:
         os.chdir(directory)
-
+    if box is None:
+        min_vals = [np.inf, np.inf, np.inf]
+        max_vals = [-np.inf, -np.inf, -np.inf]
+        for bubble in bubbles:
+            for i in range(3):
+                if bubble['loc'][i] < min_vals[i]:
+                    min_vals[i] = bubble['loc'][i]
+                if bubble['loc'][i] > max_vals[i]:
+                    max_vals[i] = bubble['loc'][i]
+        box = [min_vals, max_vals]
     # Open the file for writing
     with open(file_name + ".pdb", 'w') as pdb_file:
         # Write the header that lets vorpy know it is a foam pdb
-        pdb_file.write('REMARK foam_gen generated foam with {}\n'.format(foam_info))
+        pdb_file.write('REMARK foam_gen generated foam with {} {}\n'.format(*box[0], *box[1]))
         # Go through each atom in the system
         for i, a in bubbles.iterrows():
             # Get the location string
-            loc = ["{:.3f}".format(_) for _ in a['loc']]
-            # Get the information from the atom in writable format
-            ser_num = " " * (5 - len(str(i+1))) + str(i + 1)
-            file_name = a['name'] + " " * (4 - len(a['name']))
-            if 'residue' in a:
-                res = " " * (3 - len(a['residue'])) + a['residue']
-            else:
-                res = "   "
-            if 'chn' not in a or a['chn'].name.lower() == "zz" or a['chn'].name.lower() == 'mol' or a['chn'].name.lower() == 'sol':
-                chain = " "
-            else:
-                chain = str(a.chn.name)
-            if 'res_seq' in a:
-                res_seq = " " * (3 - len(str(a['res_seq']))) + str(a['res_seq'])
-            else:
-                res_seq = "   "
-            loc_strs = [" " * (7 - len(_)) + _ for _ in loc]
-            occupancy = " " * 5
-            arad = round(a['rad'], 2)
-            t_fact = " " * (5 - len(str(arad))) + str(arad)
-            if 'seg_id' in a:
-                seg_id = a['seg_id'] + " " * (3 - len(a['seg_id']))
-            else:
-                seg_id = "   "
-            if 'element' in a:
-                symbol = a['element']
-            else:
-                symbol = 'h'
-            charge = ''
+            x, y, z = a['loc']
+            occ = 1
+
             # Write the atom information
-            pdb_file.write("ATOM  " + ser_num + " " + file_name + " " + res + " " + chain + res_seq + "    " +
-                           " ".join(loc_strs) + occupancy + t_fact + "      " + seg_id + symbol + charge + "\n")
+            pdb_file.write(pdb_line(ser_num=i, name=a['name'], res_name=a['residue'], chain=a['chain'],
+                                    x=x, y=y, z=z, occ=occ, tfact=a['rad']))
     # Change back to the starting directory
     os.chdir(start_dir)
 
@@ -234,11 +232,10 @@ def set_sys_dir(dir_name=None):
     :param dir_name: Name for the directory
     :return:
     """
-    if not os.path.exists("./Data/user_data"):
-        os.mkdir("./Data/user_data")
     if dir_name is None:
         # If no outer directory was specified use the directory outside the current one
-        dir_name = os.getcwd() + "/Data/user_data/" + 'foam'
+        dir_name = os.getcwd() + 'foam'
+
     # Catch for existing directories. Keep trying out directories until one doesn't exist
     i = 0
     while True:

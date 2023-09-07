@@ -32,7 +32,7 @@ def make_foam(mu, sd, n, density, num_boxes=None, open_cell=True):
     for i, bub in enumerate(bubble_radii):
         if open_cell:
             my_loc = random.rand(3) * cube_width
-            bubbles.append({'loc': my_loc, 'rad': bub, 'num': i, 'name': 'b' + str(i), 'asurfs': [], 'residue': str(i)})
+            bubbles.append({'chain': 'A', 'loc': my_loc, 'rad': bub, 'num': i, 'name': 'b' + str(i), 'asurfs': [], 'residue': str(i)})
         else:
             while True:
                 my_loc = random.rand(3) * cube_width
@@ -40,7 +40,7 @@ def make_foam(mu, sd, n, density, num_boxes=None, open_cell=True):
                 my_close_bubs = get_bubbles(bubble_matrix, my_box, sub_box_size, max_bub_radius)
                 for bubble in my_close_bubs:
                     if calc_dist(my_loc, bubble['loc']) > bub + bubble['rad']:
-                        bubbles.append({'loc': my_loc, 'rad': bub, 'num': i, 'name': 'b' + str(i), 'asurfs': [], 'residue': str(i)})
+                        bubbles.append({'chain': 'A', 'loc': my_loc, 'rad': bub, 'num': i, 'name': 'b' + str(i), 'asurfs': [], 'residue': str(i)})
                         break
     verts = [[0, 0, 0], [cube_width, cube_width, cube_width]]
     return DataFrame(bubbles), verts
