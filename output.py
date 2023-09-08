@@ -38,7 +38,7 @@ def write_pdb(bubbles, file_name, directory=None, box=None):
     if box is None:
         min_vals = [np.inf, np.inf, np.inf]
         max_vals = [-np.inf, -np.inf, -np.inf]
-        for bubble in bubbles:
+        for j, bubble in bubbles.iterrows():
             for i in range(3):
                 if bubble['loc'][i] < min_vals[i]:
                     min_vals[i] = bubble['loc'][i]
