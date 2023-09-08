@@ -13,7 +13,7 @@ def output_all(bubbles, verts, dir=None):
         file_name = 'foam'
         my_dir = set_sys_dir('foam')
 
-    write_pdb(bubbles, file_name, directory=my_dir)
+    write_pdb(bubbles, file_name, directory=my_dir, box=verts)
     set_pymol_atoms(bubbles, directory=my_dir)
     write_box(verts, file_name='retaining_box', directory=my_dir)
 
@@ -48,7 +48,7 @@ def write_pdb(bubbles, file_name, directory=None, box=None):
     # Open the file for writing
     with open(file_name + ".pdb", 'w') as pdb_file:
         # Write the header that lets vorpy know it is a foam pdb
-        pdb_file.write('REMARK foam_gen generated foam with {} {}\n'.format(*box[0], *box[1]))
+        pdb_file.write('REMARK foam_gen generated foam with {:.3f} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f}\n'.format(*box[0], *box[1]))
         # Go through each atom in the system
         for i, a in bubbles.iterrows():
             # Get the location string
