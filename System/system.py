@@ -32,7 +32,7 @@ class System:
         # Gui
         self.gui = gui                      # GUI                 :   GUI Vorpy object that can be updated through sys
         self.print_actions = print_actions  # Print actions Bool  :   Tells the system to print or not
-        
+
         self.read_argv()
 
     def read_argv(self):
@@ -96,10 +96,11 @@ class System:
         bubbles = []
         # Place the spheres
         for i, bub in enumerate(bubble_radii):
+            hex_name = str(hex(i))[2:]
             if open_cell:
                 my_loc = random.rand(3) * cube_width
-                bubbles.append({'chain': 'A', 'loc': my_loc, 'rad': bub, 'num': i, 'name': 'b' + str(i), 'asurfs': [],
-                                'residue': str(i)})
+                bubbles.append({'chain': 'A', 'loc': my_loc, 'rad': bub, 'num': i, 'name': hex_name, 'asurfs': [],
+                                'residue': 'bub'})
             else:
                 while True:
                     my_loc = random.rand(3) * cube_width
@@ -108,8 +109,8 @@ class System:
                     for bubble in my_close_bubs:
                         if calc_dist(my_loc, bubble['loc']) > bub + bubble['rad']:
                             bubbles.append(
-                                {'chain': 'A', 'loc': my_loc, 'rad': bub, 'num': i, 'name': 'b' + str(i), 'asurfs': [],
-                                 'residue': str(i)})
+                                {'chain': 'A', 'loc': my_loc, 'rad': bub, 'num': i, 'name': hex_name, 'asurfs': [],
+                                 'residue': bub})
                             break
         verts = [[0, 0, 0], [cube_width, cube_width, cube_width]]
         self.bubbles, self.box = DataFrame(bubbles), verts
