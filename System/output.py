@@ -1,10 +1,11 @@
-from draw import draw_line
+from System.draw import draw_line
 import numpy as np
 import os
-from calcs import pdb_line
+from System.calcs import pdb_line
 
 
-def output_all(bubbles, verts, dir=None):
+def output_all(sys, dir=None):
+    bubbles, verts = sys.bubbles, sys.box
     if dir is None:
         # Write the output files
         file_name = 'foam'
@@ -140,89 +141,6 @@ def write_box(verts, file_name, color=None, directory=None):
                            str(color[1]) + " " + str(color[2]) + "\n")
             # Keep counting triangles for the system file
             num_verts += 6
-
-
-def draw_box(verts, res=None):
-    # Check for a given resolution
-    if res is None:
-        res = 0.5
-    # Draw the 3 baselines
-    x_points = np.array([np.array([_, *verts[0][1:]]) for _ in np.arange(verts[0][0], verts[1][0], res)])
-    y_points = np.array([np.array([verts[0][0], _, verts[0][2]]) for _ in np.arange(verts[0][1], verts[1][1], res)])
-    z_points = np.array([np.array([*verts[0][:2], _]) for _ in np.arange(verts[0][2], verts[1][2], res)])
-    # Create the 4 x direction lines
-    x_00 = draw_line(x_points)
-    tot = len(x_00[0])
-    x_10 = draw_line(np.array([_ + np.array([0, verts[1][1], 0]) for _ in x_points]), base_point=tot)
-    tot += len(x_10[0])
-    x_01 = draw_line(np.array([_ + np.array([0, 0, verts[1][2]]) for _ in x_points]), base_point=tot)
-    tot += len(x_01[0])
-    x_11 = draw_line(np.array([_ + np.array([0, verts[1][1], verts[1][2]]) for _ in x_points]), base_point=tot)
-    tot += len(x_11[0])
-    # Create the 4 y direction lines
-    y_00 = draw_line(y_points, base_point=tot)
-    tot = len(y_00[0])
-    y_10 = draw_line(np.array([_ + np.array([verts[1][0], 0, 0]) for _ in y_points]), base_point=tot)
-    tot += len(y_10[0])
-    y_01 = draw_line(np.array([_ + np.array([0, 0, verts[1][2]]) for _ in y_points]), base_point=tot)
-    tot += len(y_01[0])
-    y_11 = draw_line(np.array([_ + np.array([verts[1][0], 0, verts[1][2]]) for _ in y_points]), base_point=tot)
-    tot += len(y_11[0])
-    # Create the 4 z direction lines
-    z_00 = draw_line(z_points, base_point=tot)
-    tot = len(z_00[0])
-    z_10 = draw_line(np.array([_ + np.array([verts[1][0], 0, 0]) for _ in z_points]), base_point=tot)
-    tot += len(z_10[0])
-    z_01 = draw_line(np.array([_ + np.array([0, verts[1][1], 0]) for _ in z_points]), base_point=tot)
-    tot += len(z_01[0])
-    z_11 = draw_line(np.array([_ + np.array([verts[1][0], verts[1][1], 0]) for _ in z_points]), base_point=tot)
-    # Create the list of points
-    points = x_00[0] + x_10[0] + x_01[0] + x_11[0] + y_00[0] + y_10[0] + y_01[0] + y_11[0] + z_00[0] + z_10[0] + \
-             z_01[0] + z_11[0]
-    tris = x_00[1] + x_10[1] + x_01[1] + x_11[1] + y_00[1] + y_10[1] + y_01[1] + y_11[1] + z_00[1] + z_10[1] + \
-             z_01[1] + z_11[1]
-    # points = x_00[0] + y_00[0] + z_00[0]
-    # tris = x_00[1] + y_00[1] + z_00[1]
-    return points, tris
-
-
-# def write_box(verts, file_name, color=None, directory=None):
-#     """
-#     Writes an off file for the edges specified
-#     :param edges: Edges to be output
-#     :param file_name: Name for the output file
-#     :param color: Color for the edges
-#     :param directory: Output directory
-#     :return: None
-#     """
-#     # Make note of the starting directory
-#     start_dir = os.getcwd()
-#     # Check to see if a directory is given
-#     if directory is not None:
-#         os.chdir(directory)
-#     # If no color is given, make the color random
-#     if color is None:
-#         color = [0.5, 0.5, 0.5]
-#     # Get the points and triangles for the box
-#     points, tris = draw_box(verts)
-#     # Create the file
-#     with open(file_name + ".off", 'w') as file:
-#         # Count the number of triangles and vertices there are
-#         # Write the numbers into the file
-#         file.write("OFF\n" + str(len(points)) + " " + str(len(tris)) + " 0\n\n\n")
-#         # Go through the points on the surface
-#         for point in points:
-#             # Add the point to the system file and the surface's file (rounded to 4 decimal points)
-#             str_point = [str(round(float(point[_]), 4)) for _ in range(3)]
-#             file.write(str_point[0] + " " + str_point[1] + " " + str_point[2] + '\n')
-#         num_verts, tri_count = 0, 0
-#         # Go through the triangles in the surface
-#         for tri in tris:
-#             # Add the triangle to the system file and the surface's file
-#             str_tri = [str(tri[_] + num_verts) for _ in range(3)]
-#             file.write("3 " + str_tri[0] + " " + str_tri[1] + " " + str_tri[2] + " " + str(color[0]) + " " +
-#                        str(color[1]) + " " + str(color[2]) + "\n")
-#     os.chdir(start_dir)
 
 
 def set_sys_dir(dir_name=None):
