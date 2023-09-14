@@ -14,12 +14,12 @@ def output_all(sys, dir=None):
         file_name = 'foam'
         my_dir = set_sys_dir('foam')
 
-    write_pdb(bubbles, file_name, directory=my_dir, box=verts)
+    write_pdb(sys, directory=my_dir)
     set_pymol_atoms(bubbles, directory=my_dir)
     write_box(verts, file_name='retaining_box', directory=my_dir)
 
 
-def write_pdb(bubbles, file_name, directory=None, box=None):
+def write_pdb(sys, directory=None):
     """
     Creates a pdb file type in the current working directory
     :param bubbles: List of atom type objects for writing
@@ -28,36 +28,25 @@ def write_pdb(bubbles, file_name, directory=None, box=None):
     :param directory: Output directory for the file
     :return: Writes a pdb file for the set of atoms
     """
-    # Catch empty atoms cases
-    if bubbles is None or len(bubbles) == 0:
-        return
     # Make note of the starting directory
     start_dir = os.getcwd()
     # Change to the specified directory
     if directory is not None:
         os.chdir(directory)
-    if box is None:
-        min_vals = [np.inf, np.inf, np.inf]
-        max_vals = [-np.inf, -np.inf, -np.inf]
-        for j, bubble in bubbles.iterrows():
-            for i in range(3):
-                if bubble['loc'][i] < min_vals[i]:
-                    min_vals[i] = bubble['loc'][i]
-                if bubble['loc'][i] > max_vals[i]:
-                    max_vals[i] = bubble['loc'][i]
-        box = [min_vals, max_vals]
     # Open the file for writing
-    with open(file_name + ".pdb", 'w') as pdb_file:
+    with open("foam.pdb", 'w') as pdb_file:
         # Write the header that lets vorpy know it is a foam pdb
-        pdb_file.write('REMARK foam_gen {:.3f} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f}\n'.format(*box[0], *box[1]))
+        pdb_file.write('REMARK foam_gen {:.3f} {} {} {} {}\n'.format(sys.box[1][1], sys.data['bubble size'], sys.data['bubble sd'], sys.data['bubble num'], sys.data['bubble density']))
         # Go through each atom in the system
-        for i, a in bubbles.iterrows():
+        for i, a in sys.bubbles.iterrows():
             # Get the location string
             x, y, z = a['loc']
             occ = 1
-
+            elem = 'h'
+            if a['residue'] == 'OUT':
+                elem = 'n'
             # Write the atom information
-            pdb_file.write(pdb_line(ser_num=i, name=a['name'], res_name=a['residue'], chain=a['chain'],
+            pdb_file.write(pdb_line(ser_num=i, name=a['name'], res_name=a['residue'], chain=a['chain'], elem=elem,
                                     x=x, y=y, z=z, occ=occ, tfact=a['rad']))
     # Change back to the starting directory
     os.chdir(start_dir)
