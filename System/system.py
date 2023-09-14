@@ -3,6 +3,7 @@ from pandas import DataFrame
 from System.calcs import box_search, get_bubbles, calc_dist
 import os
 from System.output import set_sys_dir, output_all
+from Visualize.mpl_visualize import plot_atoms
 
 
 class System:
@@ -20,11 +21,11 @@ class System:
         # Loadable objects
         self.args = args                    # Args                :   Pre loaded arguments to run faster
         self.bubbles = bubbles              # Atoms               :   List holding the atom objects
-        self.box = None
-        self.outer_spheres = None           # Outer Spheres       :   Spheres that touch the outside of the box
+        self.bubble_matrix = None           # Bubble Matrix       :   3D matrix holding the bubbles for tracking overlap
+        self.box = None                     # Bubble box          :   Vertices of the box holding the bubbles
 
         # Set up the file attributes
-        self.data = {}                      # Data                :   Additional data provided by the base file
+        self.data = {'open cell': True}     # Data                :   Additional data provided by the base file
         self.dir = output_directory         # Output Directory    :   Output directory for the export files
         self.vpy_dir = root_dir             # Vorpy Directory     :   Directory that vorpy is running out of
         self.max_atom_rad = 0               # Max atom rad        :   Largest radius of the system for reference
@@ -39,7 +40,12 @@ class System:
         # Check if argv
         if len(self.args) == 5:
             bs, bsd, bn, bd = self.args[1:]
-            self.data = {'bubble size': float(bs), 'bubble sd': float(bsd), 'bubble num': int(bn), 'bubble density': float(bd)}
+            self.data = {'bubble size': float(bs), 'bubble sd': float(bsd), 'bubble num': int(bn), 'bubble density': float(bd), 'open cell': self.data['open cell']}
+            self.make_foam()
+            output_all(self)
+        elif len(self.args) == 6:
+            bs, bsd, bn, bd, oc = self.args[1:]
+            self.data = {'bubble size': float(bs), 'bubble sd': float(bsd), 'bubble num': int(bn), 'bubble density': float(bd), 'open cell': bool(oc)}
             self.make_foam()
             output_all(self)
         elif len(self.args) > 1 and self.args[1].lower() == 'multi':
@@ -56,7 +62,7 @@ class System:
             self.make_foam()
             output_all(self)
 
-    def prompt(self, bubble_size=None, bubble_sd=None, bubble_num=None, bubble_density=None):
+    def prompt(self, bubble_size=None, bubble_sd=None, bubble_num=None, bubble_density=None, open_cell=None):
         # Get the system information
         if bubble_size is None:
             self.data['bubble size'] = float(input("Enter mean bubble size - "))
@@ -66,10 +72,16 @@ class System:
             self.data['bubble num'] = int(input("Enter number of bubbles - "))
         if bubble_density is None:
             self.data['bubble density'] = float(input("Enter bubble density - "))
+        if open_cell is None:
+            opc = input("Open cell (overlapping)? - ")
+            # If user says yes, default is True so no need to catch those cases
+            if opc.lower() in ['n', 'no', 'f', 'false']:
+                self.data['open cell'] = True
 
-    def make_foam(self, num_boxes=None, open_cell=True):
+    def make_foam(self, print_actions=True):
         # Get the variables
-        mu, sd, n, density = self.data['bubble size'], self.data['bubble sd'], self.data['bubble num'], self.data['bubble density']
+        mu, sd, n, density, open_cell = self.data['bubble size'], self.data['bubble sd'], self.data['bubble num'], \
+            self.data['bubble density'], self.data['open cell']
         # Get the radii for the bubbles in the foam
         bubble_radii = [_ - 1 for _ in random.lognormal(mu, sd, n)]
         max_bub_radius = max(bubble_radii)
@@ -81,36 +93,55 @@ class System:
         cube_vol = total_bubble_volume / density
         # Calculate the cube width
         cube_width = cbrt(cube_vol)
-
-        # Set the number of boxes to roughly 5x the number of atoms must be a cube for the of cells per row/column/aisle
-        if num_boxes is None:
-            num_boxes = int(0.5 * sqrt(n)) + 1
-        else:
-            num_boxes = int(cbrt(num_boxes)) + 1
-        num_splits = num_boxes
+        # Create the box
+        self.box = [[0, 0, 0], [cube_width, cube_width, cube_width]]
         # Instantiate the grid structure of lists is locations representing a grid
-        bubble_matrix = {(-1, -1, -1): [n]}
+        self.bubble_matrix = {(-1, -1, -1): [n]}
         # Get the cell size
         sub_box_size = [round(cube_width / n, 3) for i in range(3)]
-
+        # Create the bubble list
         bubbles = []
         # Place the spheres
         for i, bub in enumerate(bubble_radii):
-            hex_name = str(hex(i))[2:]
-            if open_cell:
+            # Print the loading bar
+            if print_actions:
+                print("\rCreating bubbles - {:.2f} %".format(100 * (i + 1) / n), end="")
+            # Keep trying to place the bubble into a spot where it won't overlap
+            while True:
+                # Calculate a random bubble location
                 my_loc = random.rand(3) * cube_width
-                bubbles.append({'chain': 'A', 'loc': my_loc, 'rad': bub, 'num': i, 'name': hex_name, 'asurfs': [],
-                                'residue': 'bub'})
-            else:
-                while True:
-                    my_loc = random.rand(3) * cube_width
-                    my_box = box_search(my_loc, num_splits, box_verts=[[0, 0, 0], [cube_width, cube_width, cube_width]])
-                    my_close_bubs = get_bubbles(bubble_matrix, my_box, sub_box_size, max_bub_radius)
-                    for bubble in my_close_bubs:
-                        if calc_dist(my_loc, bubble['loc']) > bub + bubble['rad']:
-                            bubbles.append(
-                                {'chain': 'A', 'loc': my_loc, 'rad': bub, 'num': i, 'name': hex_name, 'asurfs': [],
-                                 'residue': bub})
-                            break
-        verts = [[0, 0, 0], [cube_width, cube_width, cube_width]]
-        self.bubbles, self.box = DataFrame(bubbles), verts
+                # Find the box that the bubble would belong to
+                my_box = [int((my_loc[j] - self.box[0][j]) / sub_box_size[j]) for j in range(3)]
+                # Find all bubbles within range of the
+                close_bubs = [bubbles[_] for _ in get_bubbles(self.bubble_matrix, my_box, sub_box_size, max_bub_radius, bub)]
+                print(close_bubs)
+                # Create the overlap tracking variable
+                overlap = False
+                # Loop through the close bubbles
+                for bubble in close_bubs:
+                    # In non-open cell case, check for overlap -> distance less than the sum of radii
+                    if not open_cell and calc_dist(my_loc, bubble['loc']) < bub + bubble['rad']:
+                        overlap = True
+                        break
+                    # In open cell case, check for encapsulation -> distance less than the difference of radii
+                    elif open_cell and calc_dist(my_loc, bubble['loc']) < abs(bub - bubble['rad']):
+                        overlap = True
+                        break
+                # Skip this location if it overlaps following the overlap criteria
+                if overlap:
+                    continue
+                break
+            # Set the default residue and chain
+            residue, chain = 'BUB', 'A'
+            # Check the location of the bubble
+            if any([my_loc[i] < bub or my_loc[i] + bub > cube_width for i in range(3)]):
+                residue, chain = 'OUT', ''
+            # Create the bubble
+            bubbles.append({'chain': chain, 'loc': my_loc, 'rad': bub, 'num': i, 'name': str(hex(i))[2:], 'asurfs': [],
+                            'residue': residue, 'box': my_box})
+            # Add the atom to the box
+            try:
+                self.bubble_matrix[my_box[0], my_box[1], my_box[2]].append(i)
+            except KeyError:
+                self.bubble_matrix[my_box[0], my_box[1], my_box[2]] = [i]
+        self.bubbles = DataFrame(bubbles)
