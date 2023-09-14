@@ -114,7 +114,6 @@ class System:
                 my_box = [int((my_loc[j] - self.box[0][j]) / sub_box_size[j]) for j in range(3)]
                 # Find all bubbles within range of the
                 close_bubs = [bubbles[_] for _ in get_bubbles(self.bubble_matrix, my_box, sub_box_size, max_bub_radius, bub)]
-                print(close_bubs)
                 # Create the overlap tracking variable
                 overlap = False
                 # Loop through the close bubbles
