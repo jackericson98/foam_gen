@@ -3,7 +3,7 @@ from pandas import DataFrame
 from System.calcs import box_search, get_bubbles, calc_dist
 import os
 from System.output import set_sys_dir, output_all
-from Visualize.mpl_visualize import plot_atoms
+from Visualize.mpl_visualize import plot_atoms, plt
 
 
 class System:
@@ -34,6 +34,7 @@ class System:
         self.gui = gui                      # GUI                 :   GUI Vorpy object that can be updated through sys
         self.print_actions = print_actions  # Print actions Bool  :   Tells the system to print or not
 
+        # Read the arguments of the terminal
         self.read_argv()
 
     def read_argv(self):
@@ -95,10 +96,12 @@ class System:
         cube_width = cbrt(cube_vol)
         # Create the box
         self.box = [[0, 0, 0], [cube_width, cube_width, cube_width]]
+        # Set the number of boxes to roughly 5x the number of atoms must be a cube for the of cells per row/column/aisle
+        num_boxes = int(0.5 * sqrt(n)) + 1
         # Instantiate the grid structure of lists is locations representing a grid
-        self.bubble_matrix = {(-1, -1, -1): [n]}
+        self.bubble_matrix = {(-1, -1, -1): [num_boxes]}
         # Get the cell size
-        sub_box_size = [round(cube_width / n, 3) for i in range(3)]
+        sub_box_size = [round(cube_width / num_boxes, 3) for i in range(3)]
         # Create the bubble list
         bubbles = []
         # Place the spheres
@@ -106,20 +109,28 @@ class System:
             # Print the loading bar
             if print_actions:
                 print("\rCreating bubbles - {:.2f} %".format(100 * (i + 1) / n), end="")
+            if len(bubbles) >= 1:
+                plot_atoms([bubbles[-1]['loc']] + [_['loc'] for _ in bubbles[:-1]], [bubbles[-1]['rad']] + [_['rad'] for _ in bubbles[:-1]],
+                           ['red'] + ['blue' for i in range(len(bubbles) - 1)], Show=True)
+
             # Keep trying to place the bubble into a spot where it won't overlap
             while True:
                 # Calculate a random bubble location
                 my_loc = random.rand(3) * cube_width
                 # Find the box that the bubble would belong to
-                my_box = [int((my_loc[j] - self.box[0][j]) / sub_box_size[j]) for j in range(3)]
+                my_box = [int(my_loc[j] / sub_box_size[j]) for j in range(3)]
                 # Find all bubbles within range of the
-                close_bubs = [bubbles[_] for _ in get_bubbles(self.bubble_matrix, my_box, sub_box_size, max_bub_radius, bub)]
+                bub_ints = get_bubbles(self.bubble_matrix, my_box, sub_box_size, max_bub_radius, bub)
+                close_bubs = [bubbles[_] for _ in bub_ints]
                 # Create the overlap tracking variable
                 overlap = False
                 # Loop through the close bubbles
                 for bubble in close_bubs:
+                    # print(calc_dist(my_loc, bubble['loc']), bub, bubble['rad'])
                     # In non-open cell case, check for overlap -> distance less than the sum of radii
+                    print(calc_dist(my_loc, bubble['loc']), bub + bubble['rad'], my_loc, bubble['loc'], bub, bubble['rad'])
                     if not open_cell and calc_dist(my_loc, bubble['loc']) < bub + bubble['rad']:
+                        print('overlapping')
                         overlap = True
                         break
                     # In open cell case, check for encapsulation -> distance less than the difference of radii
@@ -129,6 +140,10 @@ class System:
                 # Skip this location if it overlaps following the overlap criteria
                 if overlap:
                     continue
+                fig = plt.figure()
+                ax = fig.add_subplot(projection='3d')
+                ax.set_title('test')
+                plot_atoms([my_loc] + [_['loc'] for _ in close_bubs], [bub] + [_['rad'] for _ in close_bubs], ['red'] + ['blue' for i in range(len(close_bubs))], Show=True, fig=fig, ax=ax)
                 break
             # Set the default residue and chain
             residue, chain = 'BUB', 'A'
@@ -143,4 +158,6 @@ class System:
                 self.bubble_matrix[my_box[0], my_box[1], my_box[2]].append(i)
             except KeyError:
                 self.bubble_matrix[my_box[0], my_box[1], my_box[2]] = [i]
+            # print(bubbles[-1]['loc'], bubbles[-1]['rad'], self.bubble_matrix)
+        print(self.bubble_matrix)
         self.bubbles = DataFrame(bubbles)
