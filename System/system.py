@@ -46,7 +46,9 @@ class System:
             output_all(self)
         elif len(self.args) == 6:
             bs, bsd, bn, bd, oc = self.args[1:]
-            self.data = {'bubble size': float(bs), 'bubble sd': float(bsd), 'bubble num': int(bn), 'bubble density': float(bd), 'open cell': bool(oc)}
+            if oc.lower() in ['n', 'no', 'f', 'false']:
+                oc = False
+            self.data = {'bubble size': float(bs), 'bubble sd': float(bsd), 'bubble num': int(bn), 'bubble density': float(bd), 'open cell': oc}
             self.make_foam()
             output_all(self)
         elif len(self.args) > 1 and self.args[1].lower() == 'multi':
@@ -77,7 +79,7 @@ class System:
             opc = input("Open cell (overlapping)? - ")
             # If user says yes, default is True so no need to catch those cases
             if opc.lower() in ['n', 'no', 'f', 'false']:
-                self.data['open cell'] = True
+                self.data['open cell'] = False
 
     def make_foam(self, print_actions=True):
         # Get the variables
@@ -85,11 +87,19 @@ class System:
             self.data['bubble density'], self.data['open cell']
         # Get the radii for the bubbles in the foam
         bubble_radii = [_ - 1 for _ in random.lognormal(mu, sd, n)]
+        # By sorting the bubbles they are able to be inserted more quickly into the box
+        bubble_radii.sort(reverse=True)
+        # Get the maximum bubble radius
         max_bub_radius = max(bubble_radii)
         total_bubble_volume = 0
         # Calculate the total bubble volume
         for bub in bubble_radii:
-            total_bubble_volume += 4 / 3 * pi * bub ** 3
+            # In the open cell case calculate the sum of the actual volumes for the
+            if open_cell:
+                total_bubble_volume += 4 / 3 * pi * bub ** 3
+            # In the closed cell case calculate the density off of the cube surrounding the bubble for extra cushion
+            else:
+                total_bubble_volume += bub ** 3
         # Calculate the retaining cube size
         cube_vol = total_bubble_volume / density
         # Calculate the cube width
@@ -109,10 +119,6 @@ class System:
             # Print the loading bar
             if print_actions:
                 print("\rCreating bubbles - {:.2f} %".format(100 * (i + 1) / n), end="")
-            if len(bubbles) >= 1:
-                plot_atoms([bubbles[-1]['loc']] + [_['loc'] for _ in bubbles[:-1]], [bubbles[-1]['rad']] + [_['rad'] for _ in bubbles[:-1]],
-                           ['red'] + ['blue' for i in range(len(bubbles) - 1)], Show=True)
-
             # Keep trying to place the bubble into a spot where it won't overlap
             while True:
                 # Calculate a random bubble location
@@ -126,11 +132,8 @@ class System:
                 overlap = False
                 # Loop through the close bubbles
                 for bubble in close_bubs:
-                    # print(calc_dist(my_loc, bubble['loc']), bub, bubble['rad'])
                     # In non-open cell case, check for overlap -> distance less than the sum of radii
-                    print(calc_dist(my_loc, bubble['loc']), bub + bubble['rad'], my_loc, bubble['loc'], bub, bubble['rad'])
                     if not open_cell and calc_dist(my_loc, bubble['loc']) < bub + bubble['rad']:
-                        print('overlapping')
                         overlap = True
                         break
                     # In open cell case, check for encapsulation -> distance less than the difference of radii
@@ -140,10 +143,6 @@ class System:
                 # Skip this location if it overlaps following the overlap criteria
                 if overlap:
                     continue
-                fig = plt.figure()
-                ax = fig.add_subplot(projection='3d')
-                ax.set_title('test')
-                plot_atoms([my_loc] + [_['loc'] for _ in close_bubs], [bub] + [_['rad'] for _ in close_bubs], ['red'] + ['blue' for i in range(len(close_bubs))], Show=True, fig=fig, ax=ax)
                 break
             # Set the default residue and chain
             residue, chain = 'BUB', 'A'
@@ -158,6 +157,5 @@ class System:
                 self.bubble_matrix[my_box[0], my_box[1], my_box[2]].append(i)
             except KeyError:
                 self.bubble_matrix[my_box[0], my_box[1], my_box[2]] = [i]
-            # print(bubbles[-1]['loc'], bubbles[-1]['rad'], self.bubble_matrix)
-        print(self.bubble_matrix)
+        # Create the dataframe for the bubbles
         self.bubbles = DataFrame(bubbles)
