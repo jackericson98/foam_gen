@@ -99,7 +99,7 @@ class System:
                 total_bubble_volume += 4 / 3 * pi * bub ** 3
             # In the closed cell case calculate the density off of the cube surrounding the bubble for extra cushion
             else:
-                total_bubble_volume += bub ** 3
+                total_bubble_volume += (2 * bub) ** 3
         # Calculate the retaining cube size
         cube_vol = total_bubble_volume / density
         # Calculate the cube width
