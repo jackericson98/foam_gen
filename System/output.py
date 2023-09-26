@@ -16,7 +16,7 @@ def output_all(sys, dir=None):
 
     write_pdb(sys, directory=my_dir)
     set_pymol_atoms(bubbles, directory=my_dir)
-    write_box(verts, file_name='retaining_box', directory=my_dir)
+    write_box(verts, file_name='retaining_box', directory=my_dir, radius=0.005 * sys.box[1][0])
 
 
 def write_pdb(sys, directory=None):
@@ -69,12 +69,12 @@ def set_pymol_atoms(bubbles, directory=None):
     # Create the file
     with open('set_atoms.pml', 'w') as file:
         for i, bubble in bubbles.iterrows():
-            file.write("alter (residue {} name {}), vdw={}\n".format(bubble['residue'], bubble['num'], bubble['rad']))
+            file.write("alter (residue {} name {}), vdw={}\n".format(bubble['residue'], bubble['name'], bubble['rad']))
         file.write("\nrebuild")
     os.chdir(start_dir)
 
 
-def write_box(verts, file_name, color=None, directory=None):
+def write_box(verts, file_name, color=None, directory=None, radius=0.02):
     """
     Writes an off file for the edges specified
     :param edges: Edges to be output
@@ -98,7 +98,7 @@ def write_box(verts, file_name, color=None, directory=None):
     for line in lines:
         p0, p1 = [verts[line[0][i]][i] for i in range(3)], [verts[line[1][i]][i] for i in range(3)]
         points.append([p0, p1])
-        draw_points, draw_tris = draw_line([p0, p1])
+        draw_points, draw_tris = draw_line([p0, p1], radius=radius)
         edges_draw_points.append(draw_points)
         edges_draw_tris.append(draw_tris)
     num_verts, num_tris = 72, 72
