@@ -65,16 +65,11 @@ def set_pymol_atoms(bubbles, directory=None):
         os.chdir(directory)
     special_radii = {}
     # Check to see if the atoms in the system are all accounted for
-    for i, bubble in bubbles.iterrows():
-        special_radii[bubble['name']] = {bubble['name']: round(bubble['rad'], 2)}
+
     # Create the file
     with open('set_atoms.pml', 'w') as file:
-        # Change the radii for special atoms
-        for res in special_radii:
-            for atom in special_radii[res]:
-                res_str = "residue {} ".format(res) if res != "" else ""
-                file.write("alter ({}name {}), vdw={}\n".format(res_str, atom, special_radii[res][atom]))
-        # Rebuild the system
+        for i, bubble in bubbles.iterrows():
+            file.write("alter (residue {} name {}), vdw={}\n".format(bubble['residue'], bubble['num'], bubble['rad']))
         file.write("\nrebuild")
     os.chdir(start_dir)
 
