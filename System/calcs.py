@@ -30,7 +30,7 @@ def get_bubbles(bubble_matrix, cells, sub_box_size, max_atom_rad, dist=0):
     :param dist: The number of cells out from the initial set of cells to search
     """
     # Calculate the number of boxes out needed to find any potential overlapping sphere
-    reach = int((dist + max_atom_rad) / min(sub_box_size)) + 1
+    reach = int((dist + max_atom_rad) / min(sub_box_size)) + 2
     n = bubble_matrix[-1, -1, -1][0]
     # If a single cell is entered
     if type(cells[0]) is int:
