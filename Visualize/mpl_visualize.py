@@ -41,23 +41,22 @@ def plot_atoms(alocs, arads, colors=None, fig=None, ax=None, Show=False, dfo=Non
     if colors is None:
         colors = ['pink'for _ in range(abs(len(alocs)))]
     # If the number of atoms to plot is more than 80, then plot them as points rather than spheres.
-    if len(alocs) > 80:
-        for i in range(len(alocs)):
-            ax.scatter(alocs[i][0], alocs[i][1], alocs[i][2], s=20, c=colors[i], alpha=alpha)
-    # Plot the spheres as wireframes
-    else:
-        # Set the resolution of the spheres
-        f = max(3 - len(alocs) // 40, 1)
-        # Find u, v values that span phi and theta
-        u, v = np.mgrid[0:2 * np.pi:f*res*2j, 0:np.pi:f*res*1j]
-        # Plot each sphere
-        for i in range(len(alocs)):
-            # Get x, y, z data for the wireframe
-            x = arads[i] * np.cos(u) * np.sin(v) + alocs[i][0]
-            y = arads[i] * np.sin(u) * np.sin(v) + alocs[i][1]
-            z = arads[i] * np.cos(v) + alocs[i][2]
-            # Plot the sphere
-            ax.plot_wireframe(x, y, z, color=colors[i], alpha=alpha)
+    # if len(alocs) > 180:
+    #     for i in range(len(alocs)):
+    #         ax.scatter(alocs[i][0], alocs[i][1], alocs[i][2], s=20, c=colors[i], alpha=alpha)
+
+    # Set the resolution of the spheres
+    f = max(3 - len(alocs) // 40, 1)
+    # Find u, v values that span phi and theta
+    u, v = np.mgrid[0:2 * np.pi:f*res*2j, 0:np.pi:f*res*1j]
+    # Plot each sphere
+    for i in range(len(alocs)):
+        # Get x, y, z data for the wireframe
+        x = arads[i] * np.cos(u) * np.sin(v) + alocs[i][0]
+        y = arads[i] * np.sin(u) * np.sin(v) + alocs[i][1]
+        z = arads[i] * np.cos(v) + alocs[i][2]
+        # Plot the sphere
+        ax.plot_wireframe(x, y, z, color=colors[i], alpha=alpha)
     # Show the figure if need be
     if Show:
         plt.show()
