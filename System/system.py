@@ -81,12 +81,31 @@ class System:
             if opc.lower() in ['n', 'no', 'f', 'false']:
                 self.data['open cell'] = False
 
-    def make_foam(self, print_actions=True):
+    def make_foam(self, print_actions=True, dist='lognormal'):
         # Get the variables
         mu, sd, n, density, open_cell = self.data['bubble size'], self.data['bubble sd'], self.data['bubble num'], \
             self.data['bubble density'], self.data['open cell']
-        # Get the radii for the bubbles in the foam
-        bubble_radii = [_ - 1 for _ in random.lognormal(mu, sd, n)]
+        # Log normal distribution of radius sizes
+        if dist == 'lognormal':
+            bubble_radii = [abs(_ - 1) for _ in random.lognormal(mu, sd, n)]
+        # Half normal distribution of radius sizes
+        elif dist == 'halfnormal':
+            bubble_radii = [abs(_) for _ in random.normal(0, sd, n)]
+        # Normal distribution of radius sizes cut off at 0
+        elif dist == 'normal':
+            bubble_radii = []
+            # Keep creating radii randomly
+            while len(bubble_radii) < n:
+                rad = random.normal(mu, sd, 1)[0]
+                # Only accept radii over 0
+                if rad > 0:
+                    bubble_radii.append(rad)
+        # Geometric distribution
+        elif dist == 'geometric':
+            bubble_radii = [abs(_) for _ in random.geometric(1/mu, n)]
+        # Defaults to Normal with a absolute value for less than 0 applicants
+        else:
+            bubble_radii = [abs(_) for _ in random.normal(mu, sd, n)]
         # By sorting the bubbles they are able to be inserted more quickly into the box
         bubble_radii.sort(reverse=True)
         # Get the maximum bubble radius
