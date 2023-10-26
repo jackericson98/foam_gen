@@ -155,7 +155,7 @@ class System:
                 # Create the overlap tracking variable
                 overlap = False
                 # Loop through the close bubbles
-                for bubble in close_bubs:
+                for bubble in bubbles:
                     # In non-open cell case, check for overlap -> distance less than the sum of radii
                     if not open_cell and calc_dist(my_loc, bubble['loc']) < bub + bubble['rad']:
                         overlap = True
