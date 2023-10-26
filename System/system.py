@@ -4,6 +4,7 @@ from System.calcs import box_search, get_bubbles, calc_dist
 import os
 from System.output import set_sys_dir, output_all
 from Visualize.mpl_visualize import plot_atoms, plt
+import scipy as sp
 
 
 class System:
@@ -25,7 +26,7 @@ class System:
         self.box = None                     # Bubble box          :   Vertices of the box holding the bubbles
 
         # Set up the file attributes
-        self.data = {'open cell': True}     # Data                :   Additional data provided by the base file
+        self.data = {'open cell': False}     # Data                :   Additional data provided by the base file
         self.dir = output_directory         # Output Directory    :   Output directory for the export files
         self.vpy_dir = root_dir             # Vorpy Directory     :   Directory that vorpy is running out of
         self.max_atom_rad = 0               # Max atom rad        :   Largest radius of the system for reference
@@ -87,7 +88,11 @@ class System:
             self.data['bubble density'], self.data['open cell']
         # Log normal distribution of radius sizes
         if dist == 'lognormal':
-            bubble_radii = [abs(_ - 1) for _ in random.lognormal(mu, sd, n)]
+            bubble_radii = []
+            while len(bubble_radii) < n:
+                rad = random.lognormal(mu, sd, 1)[0] - 1
+                if rad > 0:
+                    bubble_radii.append(rad)
         # Half normal distribution of radius sizes
         elif dist == 'halfnormal':
             bubble_radii = [abs(_) for _ in random.normal(0, sd, n)]
