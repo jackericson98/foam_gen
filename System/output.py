@@ -16,7 +16,7 @@ def output_all(sys, dir=None):
 
     write_pdb(sys, directory=my_dir)
     set_pymol_atoms(bubbles, directory=my_dir)
-    write_box(verts, file_name='retaining_box', directory=my_dir, radius=0.005 * sys.box[1][0])
+    write_box(verts, file_name='retaining_box', directory=my_dir, radius=0.01 * sys.box[1][0])
 
 
 def write_pdb(sys, directory=None):
@@ -34,7 +34,7 @@ def write_pdb(sys, directory=None):
     if directory is not None:
         os.chdir(directory)
     # Open the file for writing
-    with open("foam.pdb", 'w') as pdb_file:
+    with open("lognormal.pdb", 'w') as pdb_file:
         # Write the header that lets vorpy know it is a foam pdb
         pdb_file.write('REMARK foam_gen {:.3f} {} {} {} {}\n'.format(sys.box[1][1], sys.data['bubble size'], sys.data['bubble sd'], sys.data['bubble num'], sys.data['bubble density']))
         # Go through each atom in the system
