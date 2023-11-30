@@ -1,3 +1,5 @@
+import time
+
 from numpy import random, pi, cbrt, sqrt
 from pandas import DataFrame
 from System.calcs import box_search, get_bubbles, calc_dist
@@ -119,7 +121,7 @@ class System:
         # Calculate the total bubble volume
         for bub in bubble_radii:
             # In the open cell case calculate the sum of the actual volumes for the
-            if open_cell:
+            if not open_cell:
                 total_bubble_volume += 4 / 3 * pi * bub ** 3
             # In the closed cell case calculate the density off of the cube surrounding the bubble for extra cushion
             else:
@@ -149,11 +151,17 @@ class System:
                 my_loc = random.rand(3) * cube_width
                 # Find the box that the bubble would belong to
                 my_box = [int(my_loc[j] / sub_box_size[j]) for j in range(3)]
-                # Find all bubbles within range of the
-                bub_ints = get_bubbles(self.bubble_matrix, my_box, sub_box_size, max_bub_radius, bub)
-                close_bubs = [bubbles[_] for _ in bub_ints]
                 # Create the overlap tracking variable
                 overlap = False
+                # Check to see if the bubble overlaps with the wall
+                for k in range(3):
+                    if my_loc[k] - bub < 0 or my_loc[k] + bub > cube_width:
+                        overlap = True
+                if overlap:
+                    continue
+                # # Find all bubbles within range of the
+                # bub_ints = get_bubbles(self.bubble_matrix, my_box, sub_box_size, max_bub_radius, bub)
+                # close_bubs = [bubbles[_] for _ in bub_ints]
                 # Loop through the close bubbles
                 for bubble in bubbles:
                     # In non-open cell case, check for overlap -> distance less than the sum of radii
@@ -161,7 +169,7 @@ class System:
                         overlap = True
                         break
                     # In open cell case, check for encapsulation -> distance less than the difference of radii
-                    elif open_cell and calc_dist(my_loc, bubble['loc']) < abs(bub - bubble['rad']):
+                    elif open_cell and calc_dist(my_loc, bubble['loc']) < 0.5 * abs(bub - bubble['rad']):
                         overlap = True
                         break
                 # Skip this location if it overlaps following the overlap criteria
