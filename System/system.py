@@ -138,56 +138,74 @@ class System:
         self.bubble_matrix = {(-1, -1, -1): [num_boxes]}
         # Get the cell size
         sub_box_size = [round(cube_width / num_boxes, 3) for i in range(3)]
-        # Create the bubble list
-        bubbles = []
-        # Place the spheres
-        for i, bub in enumerate(bubble_radii):
-            # Print the loading bar
-            if print_actions:
-                print("\rCreating bubbles - {:.2f} %".format(100 * (i + 1) / n), end="")
-            # Keep trying to place the bubble into a spot where it won't overlap
-            while True:
-                # Calculate a random bubble location
-                my_loc = random.rand(3) * cube_width
-                # Find the box that the bubble would belong to
-                my_box = [int(my_loc[j] / sub_box_size[j]) for j in range(3)]
-                # Create the overlap tracking variable
-                overlap = False
-                # Check to see if the bubble overlaps with the wall
-                for k in range(3):
-                    if my_loc[k] - bub < 0 or my_loc[k] + bub > cube_width:
-                        overlap = True
-                if overlap:
-                    continue
-                # # Find all bubbles within range of the
-                # bub_ints = get_bubbles(self.bubble_matrix, my_box, sub_box_size, max_bub_radius, bub)
-                # close_bubs = [bubbles[_] for _ in bub_ints]
-                # Loop through the close bubbles
-                for bubble in bubbles:
-                    # In non-open cell case, check for overlap -> distance less than the sum of radii
-                    if not open_cell and calc_dist(my_loc, bubble['loc']) < bub + bubble['rad']:
-                        overlap = True
-                        break
-                    # In open cell case, check for encapsulation -> distance less than the difference of radii
-                    elif open_cell and calc_dist(my_loc, bubble['loc']) < 0.5 * abs(bub - bubble['rad']):
-                        overlap = True
-                        break
-                # Skip this location if it overlaps following the overlap criteria
-                if overlap:
-                    continue
+        num_tries = 0
+        while True:
+            # Create the bubble list
+            bubbles = []
+            time_start = time.perf_counter()
+            break_all = False
+            # Place the spheres
+            for i, bub in enumerate(bubble_radii):
+                # Print the loading bar
+                if print_actions:
+                    print("\rCreating bubbles - {:.2f} %".format(100 * (i + 1) / n), end="")
+                # Keep trying to place the bubble into a spot where it won't overlap
+                while True:
+                    # Calculate a random bubble location
+                    my_loc = random.rand(3) * cube_width
+                    # Find the box that the bubble would belong to
+                    my_box = [int(my_loc[j] / sub_box_size[j]) for j in range(3)]
+                    # Create the overlap tracking variable
+                    overlap = False
+                    # Check to see if the bubble overlaps with the wall
+                    for k in range(3):
+                        if my_loc[k] - bub < 0 or my_loc[k] + bub > cube_width:
+                            overlap = True
+                    if overlap:
+                        continue
+                    # # Find all bubbles within range of the
+                    # bub_ints = get_bubbles(self.bubble_matrix, my_box, sub_box_size, max_bub_radius, bub)
+                    # close_bubs = [bubbles[_] for _ in bub_ints]
+                    # Loop through the close bubbles
+                    for bubble in bubbles:
+                        # In non-open cell case, check for overlap -> distance less than the sum of radii
+                        if not open_cell and calc_dist(my_loc, bubble['loc']) < bub + bubble['rad']:
+                            overlap = True
+                            break
+                        # In open cell case, check for encapsulation -> distance less than the difference of radii
+                        elif open_cell and calc_dist(my_loc, bubble['loc']) < 0.5 * abs(bub - bubble['rad']):
+                            overlap = True
+                            break
+                    # Skip this location if it overlaps following the overlap criteria
+                    if overlap:
+                        if time.perf_counter() - time_start > 50:
+                            break_all = True
+                            break
+                        continue
+                    break
+                if break_all:
+                    break
+                # Set the default residue and chain
+                residue, chain = 'BUB', 'A'
+                # Check the location of the bubble
+                if any([my_loc[i] < bub or my_loc[i] + bub > cube_width for i in range(3)]):
+                    residue, chain = 'OUT', ''
+                # Create the bubble
+                bubbles.append({'chain': chain, 'loc': my_loc, 'rad': bub, 'num': i, 'name': str(hex(i))[2:], 'asurfs': [],
+                                'residue': residue, 'box': my_box})
+                # Add the atom to the box
+                try:
+                    self.bubble_matrix[my_box[0], my_box[1], my_box[2]].append(i)
+                except KeyError:
+                    self.bubble_matrix[my_box[0], my_box[1], my_box[2]] = [i]
+
+                if time.perf_counter() - time_start > 50 or break_all:
+                    break
+            num_tries += 1
+            if num_tries > 20:
+                return
+            if len(bubble_radii) == len(bubbles):
                 break
-            # Set the default residue and chain
-            residue, chain = 'BUB', 'A'
-            # Check the location of the bubble
-            if any([my_loc[i] < bub or my_loc[i] + bub > cube_width for i in range(3)]):
-                residue, chain = 'OUT', ''
-            # Create the bubble
-            bubbles.append({'chain': chain, 'loc': my_loc, 'rad': bub, 'num': i, 'name': str(hex(i))[2:], 'asurfs': [],
-                            'residue': residue, 'box': my_box})
-            # Add the atom to the box
-            try:
-                self.bubble_matrix[my_box[0], my_box[1], my_box[2]].append(i)
-            except KeyError:
-                self.bubble_matrix[my_box[0], my_box[1], my_box[2]] = [i]
+
         # Create the dataframe for the bubbles
         self.bubbles = DataFrame(bubbles)
