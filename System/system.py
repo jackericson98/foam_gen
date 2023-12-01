@@ -1,6 +1,6 @@
 import time
 
-from numpy import random, pi, cbrt, sqrt
+from numpy import random, pi, cbrt, sqrt, log
 from pandas import DataFrame
 from System.calcs import box_search, get_bubbles, calc_dist
 import os
@@ -41,32 +41,25 @@ class System:
         self.read_argv()
 
     def read_argv(self):
-        # Check if argv
-        if len(self.args) == 5:
-            bs, bsd, bn, bd = self.args[1:]
-            self.data = {'bubble size': float(bs), 'bubble sd': float(bsd), 'bubble num': int(bn), 'bubble density': float(bd), 'open cell': self.data['open cell']}
-            self.make_foam()
-            output_all(self)
-        elif len(self.args) == 6:
-            bs, bsd, bn, bd, oc = self.args[1:]
-            if oc.lower() in ['n', 'no', 'f', 'false']:
-                oc = False
-            self.data = {'bubble size': float(bs), 'bubble sd': float(bsd), 'bubble num': int(bn), 'bubble density': float(bd), 'open cell': oc}
-            self.make_foam()
-            output_all(self)
-        elif len(self.args) > 1 and self.args[1].lower() == 'multi':
-            bs, bsd, bn, bd = self.args[3:]
-            self.data = {'bubble size': float(bs), 'bubble sd': float(bsd), 'bubble num': int(bn), 'bubble density': float(bd)}
-            my_dir = set_sys_dir('Data/user_data/multi_foam')
-            os.chdir(my_dir)
-            for i in range(int(self.args[2])):
-                self.make_foam()
-                output_all(self)
-                os.chdir('..')
+        # Set up the data dictionary
+        self.data = {'bubble size': 1, 'bubble sd': 0.1, 'bubble num': 100,
+                     'bubble density': 0.25, 'open cell': False, 'distribution': 'lognormal'}
+
+        # Check to see if argv have been made
+        if len(self.args) > 1:
+            args = self.args[1:]
+            for i, data in enumerate(self.data):
+                if i >= len(args):
+                    break
+                self.data[data] = args[i]
+
+        # If we want to prompt the user
         else:
             self.prompt()
-            self.make_foam()
-            output_all(self)
+        self.data = {'bubble size': float(self.data['bubble size']), 'bubble sd': float(self.data['bubble sd']), 'bubble num': int(self.data['bubble num']),
+                     'bubble density': float(self.data['bubble density']), 'open cell': False, 'distribution': self.data['distribution']}
+        self.make_foam()
+        output_all(self)
 
     def prompt(self, bubble_size=None, bubble_sd=None, bubble_num=None, bubble_density=None, open_cell=None):
         # Get the system information
@@ -84,10 +77,10 @@ class System:
             if opc.lower() in ['n', 'no', 'f', 'false']:
                 self.data['open cell'] = False
 
-    def make_foam(self, print_actions=True, dist='lognormal'):
+    def make_foam(self, print_actions=True):
         # Get the variables
-        mu, sd, n, density, open_cell = self.data['bubble size'], self.data['bubble sd'], self.data['bubble num'], \
-            self.data['bubble density'], self.data['open cell']
+        mu, sd, n, density, open_cell, dist = self.data['bubble size'], self.data['bubble sd'], self.data['bubble num'], \
+            self.data['bubble density'], self.data['open cell'], self.data['distribution']
         # Log normal distribution of radius sizes
         if dist == 'lognormal':
             bubble_radii = []
@@ -110,6 +103,17 @@ class System:
         # Geometric distribution
         elif dist == 'geometric':
             bubble_radii = [abs(_) for _ in random.geometric(1/mu, n)]
+        # devries
+        elif dist == 'physical1':
+            # Use the inverse transform method to get random numbers from the given distribution
+            bubble_radii = sqrt((2 ** (1 / 3) * (random.rand(n) ** (-1 / 3) - 1)) / 0.387)
+        # Ranadive & Lemlich
+        elif dist == 'physical2':
+            # Use the inverse transform method to get random numbers from the given distribution
+            bubble_radii = sqrt(-(pi / 4) * log(1 - random.rand(n)))
+            # Gal-Or & Hoelscher
+        elif dist == 'physical3':
+            bubble_radii = sqrt(-(pi / 16) * log(1 - random.rand(n)))
         # Defaults to Normal with a absolute value for less than 0 applicants
         else:
             bubble_radii = [abs(_) for _ in random.normal(mu, sd, n)]
@@ -134,21 +138,21 @@ class System:
         self.box = [[0, 0, 0], [cube_width, cube_width, cube_width]]
         # Set the number of boxes to roughly 5x the number of atoms must be a cube for the of cells per row/column/aisle
         num_boxes = int(0.5 * sqrt(n)) + 1
-        # Instantiate the grid structure of lists is locations representing a grid
-        self.bubble_matrix = {(-1, -1, -1): [num_boxes]}
         # Get the cell size
         sub_box_size = [round(cube_width / num_boxes, 3) for i in range(3)]
         num_tries = 0
         while True:
             # Create the bubble list
             bubbles = []
+            # Instantiate the grid structure of lists is locations representing a grid
+            self.bubble_matrix = {(-1, -1, -1): [num_boxes]}
             time_start = time.perf_counter()
             break_all = False
             # Place the spheres
             for i, bub in enumerate(bubble_radii):
                 # Print the loading bar
                 if print_actions:
-                    print("\rCreating bubbles - {:.2f} %".format(100 * (i + 1) / n), end="")
+                    print("\rCreating bubbles {} - {:.2f} %".format(num_tries, 100 * (i + 1) / n), end="")
                 # Keep trying to place the bubble into a spot where it won't overlap
                 while True:
                     # Calculate a random bubble location
@@ -164,10 +168,10 @@ class System:
                     if overlap:
                         continue
                     # # Find all bubbles within range of the
-                    # bub_ints = get_bubbles(self.bubble_matrix, my_box, sub_box_size, max_bub_radius, bub)
-                    # close_bubs = [bubbles[_] for _ in bub_ints]
+                    bub_ints = get_bubbles(self.bubble_matrix, my_box, sub_box_size, max_bub_radius, bub)
+                    close_bubs = [bubbles[_] for _ in bub_ints]
                     # Loop through the close bubbles
-                    for bubble in bubbles:
+                    for bubble in close_bubs:
                         # In non-open cell case, check for overlap -> distance less than the sum of radii
                         if not open_cell and calc_dist(my_loc, bubble['loc']) < bub + bubble['rad']:
                             overlap = True
@@ -178,7 +182,7 @@ class System:
                             break
                     # Skip this location if it overlaps following the overlap criteria
                     if overlap:
-                        if time.perf_counter() - time_start > 50:
+                        if time.perf_counter() - time_start > 2000:
                             break_all = True
                             break
                         continue
@@ -199,10 +203,10 @@ class System:
                 except KeyError:
                     self.bubble_matrix[my_box[0], my_box[1], my_box[2]] = [i]
 
-                if time.perf_counter() - time_start > 50 or break_all:
+                if time.perf_counter() - time_start > 2000 or break_all:
                     break
             num_tries += 1
-            if num_tries > 20:
+            if num_tries > 3:
                 return
             if len(bubble_radii) == len(bubbles):
                 break
