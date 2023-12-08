@@ -1,8 +1,11 @@
 import time
 
-from numpy import random, pi, cbrt, sqrt, log
+from numpy import random, pi, cbrt, sqrt, array, linspace, exp
 from pandas import DataFrame
 from System.calcs import box_search, get_bubbles, calc_dist
+from scipy.integrate import quad
+from scipy.interpolate import interp1d
+from scipy import stats
 import os
 from System.output import set_sys_dir, output_all
 from Visualize.mpl_visualize import plot_atoms, plt
@@ -81,6 +84,20 @@ class System:
         # Get the variables
         mu, sd, n, density, open_cell, dist = self.data['bubble size'], self.data['bubble sd'], self.data['bubble num'], \
             self.data['bubble density'], self.data['open cell'], self.data['distribution']
+
+        # Calculate the cumulative distribution function (CDF)
+        def calculate_cdf(pdf, x_values):
+            cdf_values = array([quad(pdf, 0, x)[0] for x in x_values])
+            cdf_values /= cdf_values[-1]  # Normalize to [0, 1]
+            return cdf_values
+
+        # Generate random samples using inverse transform sampling
+        def inverse_transform_sampling(pdf, x_values, n_samples):
+            cdf_values = calculate_cdf(pdf, x_values)
+            inverse_cdf = interp1d(cdf_values, x_values, kind='linear', fill_value='extrapolate')
+            u = random.rand(n_samples)
+            return inverse_cdf(u)
+
         # Log normal distribution of radius sizes
         if dist == 'lognormal':
             bubble_radii = []
@@ -88,6 +105,13 @@ class System:
                 rad = random.lognormal(mu, sd, 1)[0] - 1
                 if rad > 0:
                     bubble_radii.append(rad)
+        # Gamma distribution of radius sizes
+        if dist == 'gamma':
+            def gamma(r):
+                return 0.5 * stats.gamma.pdf(r, 4*mu, scale=1 / sd)
+
+            x_values = linspace(0, 5, n)
+            bubble_radii = inverse_transform_sampling(gamma, x_values, n)
         # Half normal distribution of radius sizes
         elif dist == 'halfnormal':
             bubble_radii = [abs(_) for _ in random.normal(0, sd, n)]
@@ -105,20 +129,31 @@ class System:
             bubble_radii = [abs(_) for _ in random.geometric(1/mu, n)]
         # devries
         elif dist == 'physical1':
-            # Use the inverse transform method to get random numbers from the given distribution
-            bubble_radii = sqrt((2 ** (1 / 3) * (random.rand(n) ** (-1 / 3) - 1)) / 0.387)
+            # Define the pdf for Devries
+            def pdf(r):
+                return 2.082 * r / (1 + 0.387 * r ** 2) ** 4
+            x_values = linspace(0, 5, n)
+            bubble_radii = inverse_transform_sampling(pdf, x_values, n)
         # Ranadive & Lemlich
         elif dist == 'physical2':
-            # Use the inverse transform method to get random numbers from the given distribution
-            bubble_radii = sqrt(-(pi / 4) * log(1 - random.rand(n)))
+            # Define the pdf for Devries
+            def pdf(r):
+                return (32/pi**2) * r**2 * exp(-(4/pi) * r**2)
+            x_values = linspace(0, 5, n)
+            bubble_radii = inverse_transform_sampling(pdf, x_values, n)
             # Gal-Or & Hoelscher
         elif dist == 'physical3':
-            bubble_radii = sqrt(-(pi / 16) * log(1 - random.rand(n)))
+            # Define the pdf for Devries
+            def pdf(r):
+                return (16/pi) * r**2 * exp(-sqrt(16/pi) * r**2)
+
+            x_values = linspace(0, 5, n)
+            bubble_radii = inverse_transform_sampling(pdf, x_values, n)
         # Defaults to Normal with a absolute value for less than 0 applicants
         else:
             bubble_radii = [abs(_) for _ in random.normal(mu, sd, n)]
         # By sorting the bubbles they are able to be inserted more quickly into the box
-        bubble_radii.sort(reverse=True)
+        bubble_radii = sorted(bubble_radii, reverse=True)
         # Get the maximum bubble radius
         max_bub_radius = max(bubble_radii)
         total_bubble_volume = 0
@@ -152,7 +187,8 @@ class System:
             for i, bub in enumerate(bubble_radii):
                 # Print the loading bar
                 if print_actions:
-                    print("\rCreating bubbles {} - {:.2f} %".format(num_tries, 100 * (i + 1) / n), end="")
+                    my_time = round(time.perf_counter() - time_start)
+                    print("\rCreating bubbles {} - {:.2f}% - {} s".format(num_tries, 100 * (i + 1) / n, my_time), end="")
                 # Keep trying to place the bubble into a spot where it won't overlap
                 while True:
                     # Calculate a random bubble location
@@ -165,6 +201,7 @@ class System:
                     for k in range(3):
                         if my_loc[k] - bub < 0 or my_loc[k] + bub > cube_width:
                             overlap = True
+                            break
                     if overlap:
                         continue
                     # # Find all bubbles within range of the
@@ -182,9 +219,9 @@ class System:
                             break
                     # Skip this location if it overlaps following the overlap criteria
                     if overlap:
-                        if time.perf_counter() - time_start > 2000:
-                            break_all = True
-                            break
+                        # if time.perf_counter() - time_start > 10000:
+                        #     break_all = True
+                        #     break
                         continue
                     break
                 if break_all:
@@ -203,7 +240,7 @@ class System:
                 except KeyError:
                     self.bubble_matrix[my_box[0], my_box[1], my_box[2]] = [i]
 
-                if time.perf_counter() - time_start > 2000 or break_all:
+                if break_all:
                     break
             num_tries += 1
             if num_tries > 3:
