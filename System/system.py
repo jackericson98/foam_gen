@@ -207,6 +207,8 @@ class System:
                     # # Find all bubbles within range of the
                     bub_ints = get_bubbles(self.bubble_matrix, my_box, sub_box_size, max_bub_radius, bub)
                     close_bubs = [bubbles[_] for _ in bub_ints]
+                    # Sort the bubbles by size
+                    close_bubs.sort(key=lambda x: x['rad'], reverse=True)
                     # Loop through the close bubbles
                     for bubble in close_bubs:
                         # In non-open cell case, check for overlap -> distance less than the sum of radii
@@ -219,9 +221,6 @@ class System:
                             break
                     # Skip this location if it overlaps following the overlap criteria
                     if overlap:
-                        # if time.perf_counter() - time_start > 10000:
-                        #     break_all = True
-                        #     break
                         continue
                     break
                 if break_all:
