@@ -47,7 +47,6 @@ class System:
         # Set up the data dictionary
         self.data = {'bubble size': 1, 'bubble sd': 0.1, 'bubble num': 100,
                      'bubble density': 0.25, 'open cell': False, 'distribution': 'lognormal'}
-
         # Check to see if argv have been made
         if len(self.args) > 1:
             args = self.args[1:]
@@ -59,8 +58,12 @@ class System:
         # If we want to prompt the user
         else:
             self.prompt()
+        open_cell = False
+        if self.data['open cell'].lower() in {'true', 't', '1', 'tru'}:
+            open_cell = True
+
         self.data = {'bubble size': float(self.data['bubble size']), 'bubble sd': float(self.data['bubble sd']), 'bubble num': int(self.data['bubble num']),
-                     'bubble density': float(self.data['bubble density']), 'open cell': False, 'distribution': self.data['distribution']}
+                     'bubble density': float(self.data['bubble density']), 'open cell': open_cell, 'distribution': self.data['distribution']}
         self.make_foam()
         output_all(self)
 
