@@ -6,7 +6,7 @@
 # Batch of lognormal foams
 for i in range(16):
     for j in range(20):
-        print("python3 foam_gen.py 1 {:.3f} 1000 {:.3f} False".format((i+4)*0.025, (j+1)*0.025))
+        print("python3 foam_gen.py 1 {:.3f} 1000 {:.3f} True".format((i+4)*0.025, (j+1)*0.025))
 #
 # # Batch for Gamma foams
 # for i in range(18):
