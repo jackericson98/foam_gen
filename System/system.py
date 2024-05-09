@@ -8,6 +8,7 @@ from scipy.interpolate import interp1d
 from scipy import stats
 import os
 from System.output import set_sys_dir, output_all
+from Visualize.GUI import settings_gui
 from Visualize.mpl_visualize import plot_atoms, plt
 import scipy as sp
 
@@ -58,7 +59,7 @@ class System:
 
         # If we want to prompt the user
         else:
-            self.prompt()
+            self.data = settings_gui()
         self.data = {'bubble size': float(self.data['bubble size']), 'bubble sd': float(self.data['bubble sd']), 'bubble num': int(self.data['bubble num']),
                      'bubble density': float(self.data['bubble density']), 'open cell': False, 'distribution': self.data['distribution']}
         self.make_foam()
