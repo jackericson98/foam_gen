@@ -154,5 +154,7 @@ def set_sys_dir(dir_name=None):
         # If the file exists increment the counter and try creating the directory again
         except FileExistsError:
             i += 1
+        except FileNotFoundError:
+            os.mkdir('Data/user_data')
     # Set the output directory for the system
     return dir_name + i_str
