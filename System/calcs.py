@@ -1,8 +1,15 @@
-from numpy import sqrt, square, inf, array
+from numba import jit
+from numpy import sqrt, square, inf, array, pi
 from scipy import stats
 
 
 def calc_dist(l0, l1):
+
+    return sqrt(sum(square(array(l0) - array(l1))))
+
+
+@jit(nopython=True)
+def calc_dist_numba(l0, l1):
     """
     Calculate distance function used to simplify code
     :param l0: Point 0 list, array, n-dimensional must match point 1
@@ -24,45 +31,91 @@ def box_search(loc, num_splits, box_verts):
     return box_ndxs
 
 
+def get_ranges(min_index, max_index, reach, max_dimension):
+    """
+    Calculate the inclusive range of indices to search based on the minimum and maximum indices,
+    the reach, and the maximum dimension allowed.
+    """
+    return [i for i in range(max(0, min_index - reach), min(max_index + reach, max_dimension - 1) + 1)]
+
+
 def get_bubbles(bubble_matrix, cells, sub_box_size, max_atom_rad, dist=0):
     """
-    Takes in the cells and the number of additional cells to search and returns an atom list
-    :param cells: The initial boxes in the network to stem from
-    :param dist: The number of cells out from the initial set of cells to search
+    Takes in the cells and the number of additional cells to search and returns a list of atoms.
+    :param cells: The initial boxes in the network to stem from.
+    :param dist: The number of cells out from the initial set of cells to search.
     """
     # Calculate the number of boxes out needed to find any potential overlapping sphere
     reach = int((dist + max_atom_rad) / min(sub_box_size)) + 4
-    n = bubble_matrix[-1, -1, -1][0]
-    # If a single cell is entered
-    if type(cells[0]) is int:
+    max_dimension = bubble_matrix[-1, -1, -1][0]
+
+    # Ensure cells is a list of lists
+    if not isinstance(cells[0], list):
         cells = [cells]
-    # Get the min and max of the cells
-    ndx_min = [inf, inf, inf]
-    ndx_max = [-inf, -inf, -inf]
-    # Go through the cells and set the minimum and maximum indexes for xyz for a rectangle containing the atoms
+
+    # Initialize minimum and maximum indices
+    index_min = [inf, inf, inf]
+    index_max = [-inf, -inf, -inf]
+
+    # Update minimum and maximum indices
     for cell in cells:
-        # Check each xyz index to see if they are larger or smaller than the max or min
         for i in range(3):
-            if cell[i] < ndx_min[i]:
-                ndx_min[i] = cell[i]
-            if cell[i] > ndx_max[i]:
-                ndx_max[i] = cell[i]
-    xs = [x for x in range(max(0, -reach + ndx_min[0] + 1), reach + ndx_max[0])]
-    ys = [y for y in range(max(0, -reach + ndx_min[1] + 1), reach + ndx_max[1])]
-    zs = [z for z in range(max(0, -reach + ndx_min[2] + 1), reach + ndx_max[2])]
+            index_min[i] = min(index_min[i], cell[i])
+            index_max[i] = max(index_max[i], cell[i])
+
+    # Calculate ranges for x, y, z dimensions
+    x_range = get_ranges(index_min[0], index_max[0], reach, max_dimension)
+    y_range = get_ranges(index_min[1], index_max[1], reach, max_dimension)
+    z_range = get_ranges(index_min[2], index_max[2], reach, max_dimension)
+
+    # Gather atoms within the calculated ranges
     atoms = []
-    # Get atoms
-    for i in xs:
-        if 0 <= i < n:
-            for j in ys:
-                if 0 <= j < n:
-                    for k in zs:
-                        if 0 <= k < n:
-                            try:
-                                atoms += bubble_matrix[i, j, k]
-                            except KeyError:
-                                pass
+    for i in x_range:
+        for j in y_range:
+            for k in z_range:
+                atoms.extend(bubble_matrix.get((i, j, k), []))
+
     return atoms
+
+# def get_bubbles(bubble_matrix, cells, sub_box_size, max_atom_rad, dist=0):
+#     """
+#     Takes in the cells and the number of additional cells to search and returns an atom list
+#     :param cells: The initial boxes in the network to stem from
+#     :param dist: The number of cells out from the initial set of cells to search
+#     """
+#     # Calculate the number of boxes out needed to find any potential overlapping sphere
+#     reach = int((dist + max_atom_rad) / min(sub_box_size)) + 4
+#     n = bubble_matrix[-1, -1, -1][0]
+#     # If a single cell is entered
+#     if type(cells[0]) is int:
+#         cells = [cells]
+#     # Get the min and max of the cells
+#     ndx_min = [inf, inf, inf]
+#     ndx_max = [-inf, -inf, -inf]
+#     # Go through the cells and set the minimum and maximum indexes for xyz for a rectangle containing the atoms
+#     for cell in cells:
+#         # Check each xyz index to see if they are larger or smaller than the max or min
+#         for i in range(3):
+#             if cell[i] < ndx_min[i]:
+#                 ndx_min[i] = cell[i]
+#             if cell[i] > ndx_max[i]:
+#                 ndx_max[i] = cell[i]
+#     xs = [x for x in range(max(0, -reach + ndx_min[0] + 1), reach + ndx_max[0])]
+#     ys = [y for y in range(max(0, -reach + ndx_min[1] + 1), reach + ndx_max[1])]
+#     zs = [z for z in range(max(0, -reach + ndx_min[2] + 1), reach + ndx_max[2])]
+#     atoms = []
+#     # Get atoms
+#     for i in xs:
+#         if 0 <= i < n:
+#             for j in ys:
+#                 if 0 <= j < n:
+#                     for k in zs:
+#                         if 0 <= k < n:
+#                             try:
+#                                 atoms += bubble_matrix[i, j, k]
+#                             except KeyError:
+#                                 pass
+#     return atoms
 
 
 def calc_box(self, locs, rads):
@@ -95,6 +148,10 @@ def calc_box(self, locs, rads):
     min_vert, max_vert = max_vert - r_box * self.box_size, min_vert + r_box * self.box_size
     # Return the list of array turned list vertices
     self.box = [[round(_, 3) for _ in min_vert], [round(_, 3) for _ in max_vert]]
+
+
+def calc_tot_vol(radii):
+    return sum([4 / 3 * pi * bub ** 3 for bub in radii])
 
 
 def pdb_line(atom="ATOM", ser_num=0, name="", alt_loc=" ", res_name="", chain="A", res_seq=0, cfir="", x=0, y=0, z=0,
