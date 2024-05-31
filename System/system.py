@@ -60,8 +60,13 @@ class System:
         # If we want to prompt the user
         else:
             self.data = settings_gui()
+        # Check the open call condition:
+        if self.data['open cell'].lower() in ['true', 't', '1']:
+            open_cell = True
+        else:
+            open_cell = False
         self.data = {'bubble size': float(self.data['bubble size']), 'bubble sd': float(self.data['bubble sd']), 'bubble num': int(self.data['bubble num']),
-                     'bubble density': float(self.data['bubble density']), 'open cell': False, 'distribution': self.data['distribution']}
+                     'bubble density': float(self.data['bubble density']), 'open cell': open_cell, 'distribution': self.data['distribution']}
         self.make_foam()
         output_all(self)
 
