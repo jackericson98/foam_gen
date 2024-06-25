@@ -6,7 +6,11 @@ from System.calcs import pdb_line
 
 def output_all(sys, dir=None):
     bubbles, verts = sys.bubbles, sys.box
-    if dir is None:
+    if sys.dir is not None:
+        # Write the output files
+        file_name = '_'.join([str(sys.data[_]) for _ in sys.data])
+        my_dir = set_sys_dir(sys.dir + '/' + file_name)
+    elif dir is None:
         # Write the output files
         file_name = '_'.join([str(sys.data[_]) for _ in sys.data])
         my_dir = set_sys_dir('Data/user_data/' + file_name)
@@ -35,8 +39,13 @@ def write_pdb(sys, directory=None):
         os.chdir(directory)
     # Open the file for writing
     with open('_'.join([str(sys.data[_]) for _ in sys.data]) + '.pdb', 'w') as pdb_file:
-        # Write the header that lets vorpy know it is a foam pdb
-        pdb_file.write('REMARK foam_gen {:.3f} {} {} {} {}\n'.format(sys.box[1][1], sys.data['bubble size'], sys.data['bubble sd'], sys.data['bubble num'], sys.data['bubble density']))
+        try:
+            # Write the header that lets vorpy know it is a foam pdb
+            pdb_file.write('REMARK foam_gen {:.3f} {} {} {} {}\n'.format(sys.box[1][1], sys.data['bubble size'], sys.data['bubble sd'], sys.data['bubble num'], sys.data['bubble density']))
+        except TypeError:
+            pass
+        except KeyError:
+            pass
         # Go through each atom in the system
         for i, a in sys.bubbles.iterrows():
             # Get the location string
