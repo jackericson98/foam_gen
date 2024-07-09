@@ -8,6 +8,26 @@ from scipy.interpolate import interp1d
 from numba import jit
 
 
+def record_density(bubbles, box, sub_box_size, bubble_matrix, max_bub_radius, n_samples=100000):
+    count = 0
+    for i in range(n_samples):
+        point = [random.uniform(min(box[0][i], box[1][i]), max(box[0][i], box[1][i])) for i in range(3)]
+        # Find the box that the bubble would belong to
+        my_box = [int(point[j] / sub_box_size[j]) for j in range(3)]
+        # # Find all bubbles within range of the
+        bub_ints = get_bubbles(bubble_matrix, my_box, sub_box_size, max_bub_radius, 0)
+        close_bubs = [bubbles[_] for _ in bub_ints]
+        # Sort the bubbles by size
+        close_bubs.sort(key=lambda x: x['rad'], reverse=True)
+        # Check for overlap with close bubs
+        close_locs, close_rads = array([_['loc'] for _ in close_bubs]), array([_['rad'] for _ in close_bubs])
+        for j, loc in enumerate(close_locs):
+            if calc_dist(array(point), loc) < close_rads[j]:
+                count += 1
+                break
+    return count / n_samples
+
+
 def get_bubble_raddi(dist, mu, sd, n):
 
     # Calculate the cumulative distribution function (CDF)
@@ -33,7 +53,7 @@ def get_bubble_raddi(dist, mu, sd, n):
     # Gamma distribution of radius sizes
     if dist == 'gamma':
         def gamma(r):
-            return 0.5 * stats.gamma.pdf(r, 4 * mu, scale=1 / sd)
+            return 0.5 * stats.gamma.pdf(r, mu, scale=1 / sd)
 
         x_values = linspace(0, 5, n)
         bubble_radii = inverse_transform_sampling(gamma, x_values, n)
@@ -93,7 +113,7 @@ def wall_overlap(my_loc, bub, cube_width):
             return True
 
 
-@jit
+@jit(nopython=True)
 def overlap(my_loc, bub, close_locs, close_rads, open_cell):
     # Loop through the close bubbles
     for i in range(len(close_locs)):
@@ -106,7 +126,7 @@ def overlap(my_loc, bub, close_locs, close_rads, open_cell):
     return False
 
 
-def find_bubs(bubble_radii, num_boxes, cube_width, sub_box_size, max_bub_radius, num_tries, open_cell, n, print_actions):
+def find_bubs(bubble_radii, num_boxes, cube_width, sub_box_size, max_bub_radius, open_cell, n, print_actions):
     # Create the bubble list
     bubbles = []
     # Instantiate the grid structure of lists is locations representing a grid
@@ -118,7 +138,7 @@ def find_bubs(bubble_radii, num_boxes, cube_width, sub_box_size, max_bub_radius,
         # Print the loading bar
         if print_actions:
             my_time = round(time.perf_counter() - time_start)
-            print("\rCreating bubbles {} - {:.2f}% - {} s".format(num_tries, 100 * (i + 1) / n, my_time), end="")
+            print("\rCreating bubbles - {:.2f}% - {} s".format(100 * (i + 1) / n, my_time), end="")
         # Keep trying to place the bubble into a spot where it won't overlap
         while True:
             # Calculate a random bubble location
@@ -166,6 +186,10 @@ def make_foam(sys, print_actions):
     bubble_radii = get_bubble_raddi(dist, mu, sd, n)
     # Get the maximum bubble radius
     max_bub_radius = max(bubble_radii)
+    # Get the open cell density
+    def change_open_cell_density(dsty):
+        new_density = 1.1231 - 1.5390 * np.sqrt(0.5362 - dsty)
+        return new_density
     # Calculate the cube width by getting the cube root of total volume of the bubble radii over the density
     cube_width = cbrt(calc_tot_vol(bubble_radii) / density)
     # Create the box
@@ -174,14 +198,14 @@ def make_foam(sys, print_actions):
     num_boxes = int(0.5 * sqrt(n)) + 1
     # Get the cell size
     sub_box_size = [round(cube_width / num_boxes, 3) for i in range(3)]
-    num_tries = 0
-    while True:
-        bubbles, sys.bubble_matrix = find_bubs(bubble_radii, num_boxes, cube_width, sub_box_size, max_bub_radius, num_tries, open_cell, n, print_actions)
-        num_tries += 1
-        if num_tries > 3:
-            return
-        if len(bubble_radii) == len(bubbles):
-            break
+
+    bubbles, sys.bubble_matrix = find_bubs(bubble_radii, num_boxes, cube_width, sub_box_size, max_bub_radius, open_cell, n, print_actions)
+    # if open_cell:
+    #     new_density = record_density(bubbles, [[0, 0, 0], [cube_width, cube_width, cube_width]],
+    #                                  sub_box_size=sub_box_size, max_bub_radius=max_bub_radius,
+    #                                  bubble_matrix=sys.bubble_matrix)
+    #     with open(sys.vpy_dir + '/Data/density_adjustments.txt', 'a') as density_logs:
+    #         density_logs.write("{} {} {} {} {} {}\n".format(new_density, mu, sd, n, density, dist))
 
     # Create the dataframe for the bubbles
     sys.bubbles = DataFrame(bubbles)
