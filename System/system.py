@@ -35,7 +35,7 @@ class System:
         # Set up the file attributes
         self.data = {'open cell': False}     # Data                :   Additional data provided by the base file
         self.dir = output_directory         # Output Directory    :   Output directory for the export files
-        self.vpy_dir = root_dir             # Vorpy Directory     :   Directory that vorpy is running out of
+        self.vpy_dir = os.getcwd()          # Vorpy Directory     :   Directory that vorpy is running out of
         self.max_atom_rad = 0               # Max atom rad        :   Largest radius of the system for reference
 
         # Gui
@@ -66,9 +66,12 @@ class System:
         else:
             self.data = settings_gui()
         # Check the open call condition:
-        if self.data['open cell'].lower() in ['true', 't', '1']:
-            open_cell = True
-        else:
+        try:
+            if self.data['open cell'].lower() in ['true', 't', '1']:
+               open_cell = True
+            else:
+                open_cell = False
+        except AttributeError:
             open_cell = False
         self.data = {'bubble size': float(self.data['bubble size']), 'bubble sd': float(self.data['bubble sd']), 'bubble num': int(self.data['bubble num']),
                      'bubble density': float(self.data['bubble density']), 'open cell': open_cell, 'distribution': self.data['distribution']}
