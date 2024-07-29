@@ -37,7 +37,7 @@ for i, _ in enumerate(sorted_data):
 
     # Extract the parameters
     a, b, c = params
-    print('{} Balls - y = {}x^2 + {}x + {}'.format(_, a, b, c))
+    print('{} Balls - y = {}x^2 + {}x + {}')
     x_fit = np.linspace(min(xs), max(xs), 100)
     y_fit = [a * x ** 2 + b * x + c for x in x_fit]
 
