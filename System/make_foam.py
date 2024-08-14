@@ -43,7 +43,7 @@ def overlap(my_loc, bub, close_locs, close_rads, open_cell):
         if not open_cell and calc_dist_numba(my_loc, close_locs[i]) < bub + close_rads[i]:
             return True
         # In open cell case, check for encapsulation -> distance less than the difference of radii
-        elif open_cell and calc_dist_numba(my_loc, close_locs[i]) < 0.5 * abs(bub - close_rads[i]):
+        elif open_cell and calc_dist_numba(my_loc, close_locs[i]) < max(bub, close_rads[i]):
             return True
     return False
 
@@ -70,8 +70,10 @@ def find_bubs(bubble_radii, num_boxes, cube_width, sub_box_size, max_bub_radius,
             # Check to see if the bubble overlaps with the wall
             if wall_overlap(my_loc, bub_rad, cube_width):
                 continue
+            # Get the distance to the closest bubble
+            num_cells = bub_rad + max(bubble_radii)
             # # Find all bubbles within range of the
-            bub_ints = get_bubbles(bubble_matrix, my_box, sub_box_size, max_bub_radius, bub_rad)
+            bub_ints = get_bubbles(bubble_matrix, my_box, sub_box_size, dist=num_cells)
             close_bubs = [bubbles[_] for _ in bub_ints]
             # Sort the bubbles by size
             close_bubs.sort(key=lambda x: x['rad'], reverse=True)

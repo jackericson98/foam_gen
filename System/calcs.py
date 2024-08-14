@@ -19,8 +19,8 @@ def calc_dist_numba(l0, l1):
     # Pythagorean theorem
     return sqrt(sum(square(l0 - l1)))
 
-
-def box_search(loc, num_splits, box_verts):
+@jit(nopython=True)
+def box_search_numba(loc, num_splits, box_verts):
     # Calculate the size of the sub boxes
     sub_box_size = [round((box_verts[1][i] - box_verts[0][i]) / num_splits, 3) for i in range(3)]
     # Find the sub box for the atom
@@ -31,51 +31,113 @@ def box_search(loc, num_splits, box_verts):
     return box_ndxs
 
 
-def get_ranges(min_index, max_index, reach, max_dimension):
+def box_search(loc, num_splits, box_verts):
     """
-    Calculate the inclusive range of indices to search based on the minimum and maximum indices,
-    the reach, and the maximum dimension allowed.
+    Locates the sub box indices for a given location
     """
-    return [i for i in range(max(0, min_index - reach), min(max_index + reach, max_dimension - 1) + 1)]
+    loc = array(loc)
+    return box_search_numba(loc, num_splits, array(box_verts))
 
 
-def get_bubbles(bubble_matrix, cells, sub_box_size, max_atom_rad, dist=0):
+def get_bubbles(bubble_matrix, cells, sub_box_size, dist=0):
     """
-    Takes in the cells and the number of additional cells to search and returns a list of atoms.
-    :param cells: The initial boxes in the network to stem from.
-    :param dist: The number of cells out from the initial set of cells to search.
+    Takes in the cells and the number of additional cells to search and returns an atom list
+    :param cells: The initial boxes in the network to stem from
+    :param dist: The number of cells out from the initial set of cells to search
     """
-    # Calculate the number of boxes out needed to find any potential overlapping sphere
-    reach = int((dist + max_atom_rad) / min(sub_box_size)) + 4
-    max_dimension = bubble_matrix[-1, -1, -1][0]
 
-    # Ensure cells is a list of lists
-    if not isinstance(cells[0], list):
+    # Get the reach around the box to grab atoms from
+    reach = int(dist / min(sub_box_size)) + 4
+    # Grab the number of cells in the grid
+    n = bubble_matrix[-1, -1, -1][0]
+    # If a single cell is entered
+    if type(cells[0]) is int:
         cells = [cells]
-
-    # Initialize minimum and maximum indices
-    index_min = [inf, inf, inf]
-    index_max = [-inf, -inf, -inf]
-
-    # Update minimum and maximum indices
+    # Get the min and max of the cells
+    ndx_min = [inf, inf, inf]
+    ndx_max = [-inf, -inf, -inf]
+    # Go through the cells and set the minimum and maximum indexes for xyz for a rectangle containing the atoms
     for cell in cells:
+        # Check each xyz index to see if they are larger or smaller than the max or min
         for i in range(3):
-            index_min[i] = min(index_min[i], cell[i])
-            index_max[i] = max(index_max[i], cell[i])
-
-    # Calculate ranges for x, y, z dimensions
-    x_range = get_ranges(index_min[0], index_max[0], reach, max_dimension)
-    y_range = get_ranges(index_min[1], index_max[1], reach, max_dimension)
-    z_range = get_ranges(index_min[2], index_max[2], reach, max_dimension)
-
-    # Gather atoms within the calculated ranges
+            if cell[i] < ndx_min[i]:
+                ndx_min[i] = cell[i]
+            if cell[i] > ndx_max[i]:
+                ndx_max[i] = cell[i]
+    xs = [x for x in range(max(0, -reach + ndx_min[0]), reach + ndx_max[0])]
+    ys = [y for y in range(max(0, -reach + ndx_min[1]), reach + ndx_max[1])]
+    zs = [z for z in range(max(0, -reach + ndx_min[2]), reach + ndx_max[2])]
     atoms = []
-    for i in x_range:
-        for j in y_range:
-            for k in z_range:
-                atoms.extend(bubble_matrix.get((i, j, k), []))
-
+    # Get atoms
+    for i in xs:
+        if 0 <= i < n:
+            for j in ys:
+                if 0 <= j < n:
+                    for k in zs:
+                        if 0 <= k < n:
+                            try:
+                                atoms += bubble_matrix[i, j, k]
+                            except KeyError:
+                                pass
     return atoms
+
+
+# def box_search(loc, num_splits, box_verts):
+#     # Calculate the size of the sub boxes
+#     sub_box_size = [round((box_verts[1][i] - box_verts[0][i]) / num_splits, 3) for i in range(3)]
+#     # Find the sub box for the atom
+#     box_ndxs = [int((loc[j] - box_verts[0][j]) / sub_box_size[j]) for j in range(3)]
+#     if box_ndxs[0] >= num_splits or box_ndxs[1] >= num_splits or box_ndxs[2] >= num_splits:
+#         return
+#     # Return the box indices
+#     return box_ndxs
+#
+#
+# def get_ranges(min_index, max_index, reach, max_dimension):
+#     """
+#     Calculate the inclusive range of indices to search based on the minimum and maximum indices,
+#     the reach, and the maximum dimension allowed.
+#     """
+#     return [i for i in range(max(0, min_index - reach), min(max_index + reach, max_dimension - 1) + 1)]
+#
+#
+# def get_bubbles(bubble_matrix, cells, sub_box_size, max_atom_rad, dist=0):
+#     """
+#     Takes in the cells and the number of additional cells to search and returns a list of atoms.
+#     :param cells: The initial boxes in the network to stem from.
+#     :param dist: The number of cells out from the initial set of cells to search.
+#     """
+#     # Calculate the number of boxes out needed to find any potential overlapping sphere
+#     reach = int((dist + max_atom_rad) / min(sub_box_size)) + 4
+#     max_dimension = bubble_matrix[-1, -1, -1][0]
+#
+#     # Ensure cells is a list of lists
+#     if not isinstance(cells[0], list):
+#         cells = [cells]
+#
+#     # Initialize minimum and maximum indices
+#     index_min = [inf, inf, inf]
+#     index_max = [-inf, -inf, -inf]
+#
+#     # Update minimum and maximum indices
+#     for cell in cells:
+#         for i in range(3):
+#             index_min[i] = min(index_min[i], cell[i])
+#             index_max[i] = max(index_max[i], cell[i])
+#
+#     # Calculate ranges for x, y, z dimensions
+#     x_range = get_ranges(index_min[0], index_max[0], reach, max_dimension)
+#     y_range = get_ranges(index_min[1], index_max[1], reach, max_dimension)
+#     z_range = get_ranges(index_min[2], index_max[2], reach, max_dimension)
+#
+#     # Gather atoms within the calculated ranges
+#     atoms = []
+#     for i in x_range:
+#         for j in y_range:
+#             for k in z_range:
+#                 atoms.extend(bubble_matrix.get((i, j, k), []))
+#
+#     return atoms
 
 # def get_bubbles(bubble_matrix, cells, sub_box_size, max_atom_rad, dist=0):
 #     """
