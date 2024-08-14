@@ -5,19 +5,19 @@ import numpy as np
 # for i in range(1, 21):
 #     print("python3 foam_gen.py 1 0.01 300 {} False physical1".format(round(i*0.025, 5)))
 
-def density_update(in_den):
-    return -0.42220023003338425 * in_den ** 2 + 0.9483439624428522 * in_den + 0.0036657838928034754
-
-def density_update1(in_den):
-    return 1.1231 - 1.5390 * np.sqrt(0.5362 - in_den)
+# def density_update(in_den):
+#     return -0.42220023003338425 * in_den ** 2 + 0.9483439624428522 * in_den + 0.0036657838928034754
+#
+# def density_update1(in_den):
+#     return 1.1231 - 1.5390 * np.sqrt(0.5362 - in_den)
 
 
 # Batch of lognormal foams
 for k in range(20):
-    for i in range(16):
-        for j in range(11, 20):
+    for density in np.linspace(0.05, 0.5, 10):
+        for cv in np.linspace(0.05, 0.5, 10):
             with open('foam_gen_{}.bat'.format(k), 'a') as poopy_dingus:
-                poopy_dingus.write("py foam_gen.py 1 {:.3f} 1000 {:.3f} True\n".format((i+4)*0.025, density_update1((j+1)*0.025)))
+                poopy_dingus.write("py foam_gen.py 1 {:.3f} 1000 {:.3f} True\n".format(cv, density))
             # print("py foam_gen.py 1 {:.3f} 1000 {:.3f} True".format((i+4)*0.025, density_update1((j+1)*0.025)))
 #
 # Batch for Gamma foams

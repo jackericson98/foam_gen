@@ -82,7 +82,7 @@ def get_bubble_raddi(dist, cv, mu, n):
             return mean_eq, var_eq
 
         # Initial guesses for kappa and lambda
-        kappa_initial = 0.5
+        kappa_initial = 0.75
         lambda_initial = mu
 
         # Solve for kappa and lambda
