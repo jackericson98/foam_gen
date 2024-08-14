@@ -1,10 +1,9 @@
 import time
-from numpy import sqrt, array, random, linspace, pi, exp, cbrt
-from scipy import stats
+from numpy import sqrt, array, random, cbrt, linspace
 from pandas import DataFrame
 from System.calcs import get_bubbles, calc_dist, calc_dist_numba, calc_tot_vol
-from scipy.integrate import quad
-from scipy.interpolate import interp1d
+from System.distributions import get_bubble_raddi
+
 from numba import jit
 
 
@@ -26,83 +25,6 @@ def record_density(bubbles, box, sub_box_size, bubble_matrix, max_bub_radius, n_
                 count += 1
                 break
     return count / n_samples
-
-
-def get_bubble_raddi(dist, mu, sd, n):
-
-    # Calculate the cumulative distribution function (CDF)
-    def calculate_cdf(pdf, x_values):
-        cdf_values = array([quad(pdf, 0, x)[0] for x in x_values])
-        cdf_values /= cdf_values[-1]  # Normalize to [0, 1]
-        return cdf_values
-
-    # Generate random samples using inverse transform sampling
-    def inverse_transform_sampling(pdf, x_values, n_samples):
-        cdf_values = calculate_cdf(pdf, x_values)
-        inverse_cdf = interp1d(cdf_values, x_values, kind='linear', fill_value='extrapolate')
-        u = random.rand(n_samples)
-        return inverse_cdf(u)
-
-    # Log normal distribution of radius sizes
-    if dist == 'lognormal':
-        bubble_radii = []
-        while len(bubble_radii) < n:
-            rad = random.lognormal(mu, sd, 1)[0] - 1
-            if rad > 0:
-                bubble_radii.append(rad)
-    # Gamma distribution of radius sizes
-    if dist == 'gamma':
-        def gamma(r):
-            return 0.5 * stats.gamma.pdf(r, mu, scale=1 / sd)
-
-        x_values = linspace(0, 5, n)
-        bubble_radii = inverse_transform_sampling(gamma, x_values, n)
-    # Half normal distribution of radius sizes
-    elif dist == 'halfnormal':
-        bubble_radii = [abs(_) for _ in random.normal(0, sd, n)]
-    # Normal distribution of radius sizes cut off at 0
-    elif dist == 'normal':
-        bubble_radii = []
-        # Keep creating radii randomly
-        while len(bubble_radii) < n:
-            rad = random.normal(mu, sd, 1)[0]
-            # Only accept radii over 0
-            if rad > 0:
-                bubble_radii.append(rad)
-    # Geometric distribution
-    elif dist == 'geometric':
-        bubble_radii = [abs(_) for _ in random.geometric(1 / mu, n)]
-    # devries
-    elif dist == 'physical1':
-        # Define the pdf for Devries
-        def pdf(r):
-            return 2.082 * r / (1 + 0.387 * r ** 2) ** 4
-
-        x_values = linspace(0, 5, n)
-        bubble_radii = inverse_transform_sampling(pdf, x_values, n)
-    # Ranadive & Lemlich
-    elif dist == 'physical2':
-        # Define the pdf for Devries
-        def pdf(r):
-            return (32 / pi ** 2) * r ** 2 * exp(-(4 / pi) * r ** 2)
-
-        x_values = linspace(0, 5, n)
-        bubble_radii = inverse_transform_sampling(pdf, x_values, n)
-        # Gal-Or & Hoelscher
-    elif dist == 'physical3':
-        # Define the pdf for Devries
-        def pdf(r):
-            return (16 / pi) * r ** 2 * exp(-sqrt(16 / pi) * r ** 2)
-
-        x_values = linspace(0, 5, n)
-        bubble_radii = inverse_transform_sampling(pdf, x_values, n)
-    # Defaults to Normal with a absolute value for less than 0 applicants
-    else:
-        bubble_radii = [abs(_) for _ in random.normal(mu, sd, n)]
-    # By sorting the bubbles they are able to be inserted more quickly into the box
-    bubble_radii = sorted(bubble_radii, reverse=True)
-    # Return the bubble radii
-    return bubble_radii
 
 
 def wall_overlap(my_loc, bub, cube_width):
@@ -180,16 +102,30 @@ def find_bubs(bubble_radii, num_boxes, cube_width, sub_box_size, max_bub_radius,
 
 def make_foam(sys, print_actions):
     # Get the variables
-    mu, sd, n, density, open_cell, dist = sys.data['bubble size'], sys.data['bubble sd'], sys.data['bubble num'], \
+    mu, cv, n, density, open_cell, dist = sys.data['bubble size'], sys.data['bubble sd'], sys.data['bubble num'], \
         sys.data['bubble density'], sys.data['open cell'], sys.data['distribution']
     # Get the bubble radii
-    bubble_radii = get_bubble_raddi(dist, mu, sd, n)
+    bubble_radii = get_bubble_raddi(dist, cv, mu, n)
     # Get the maximum bubble radius
     max_bub_radius = max(bubble_radii)
+
     # Get the open cell density
     def change_open_cell_density(dsty):
-        new_density = 1.1231 - 1.5390 * np.sqrt(0.5362 - dsty)
-        return new_density
+        if n < 10:
+            a, b, c = 1.3379916075144123, 1.5342161903140346, -0.049539624149683714
+        elif n < 100:
+            a, b, c = 2.617546924616389, 0.5263832332311094, 0.023304967275296712
+        elif n < 1000:
+            a, b, c = 1.6102372828978275, 0.7263830756664165, 0.014383340152633836
+        elif n < 10000:
+            a, b, c = 1.333495416302907, 0.763842119925516, 0.014253487381526
+        else:
+            a, b, c = 1.2139394583920557, 0.7808992862460553, 0.014317251455209012
+        return a * dsty ** 2 + b * dsty + c
+
+    # Change the open_cell density
+    if open_cell:
+        density = change_open_cell_density(density)
     # Calculate the cube width by getting the cube root of total volume of the bubble radii over the density
     cube_width = cbrt(calc_tot_vol(bubble_radii) / density)
     # Create the box
