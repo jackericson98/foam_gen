@@ -38,8 +38,6 @@ def plot_pdf_and_histogram(pdf_function, bub_radii, x_vals):
     plt.show()
 
 
-
-
 # Calculate the cumulative distribution function (CDF)
 def calculate_cdf(pdf, x_values):
     # Compute PDF values at a dense grid of points
@@ -102,7 +100,7 @@ def get_bubble_raddi(dist, cv, mu, n):
         return (16 / pi) * r ** 2 * exp(-sqrt(16 / pi) * r ** 2)
 
     # Create a dictionary for the functions
-    function = {'lognormal': lognormal, 'gamma': gamma, 'weibull': weibull, 'devries': devries, 'gal-or': gal_or,
+    function = {'lognormal': lognormal, 'gamma': gamma, 'weibull': weibull, 'devries': devries, 'gal_or': gal_or,
                 'lemlich': lemlich}[dist]
 
     x_values = linspace(0, 5, n)

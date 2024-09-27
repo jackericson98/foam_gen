@@ -2,8 +2,11 @@ import numpy as np
 
 
 # # Batch of physical foams
-# for i in range(1, 21):
-#     print("python3 foam_gen.py 1 0.01 300 {} False physical1".format(round(i*0.025, 5)))
+# for j in range(20):
+#     with open('physical_runs_{}.bat'.format(j % 5), 'w') as write_file:
+#         for k in {'gal_or'}:
+#             for i in range(1, 21):
+#                 write_file.write('py foam_gen.py 1 0 1000 {} False {}\n'.format(round(i*0.025, 5), k))
 
 # def density_update(in_den):
 #     return -0.42220023003338425 * in_den ** 2 + 0.9483439624428522 * in_den + 0.0036657838928034754
@@ -14,12 +17,12 @@ import numpy as np
 
 # Batch of lognormal foams
 for k in range(20):
-    with open('../foam_gen_{}.sh'.format(k), 'w') as peepee_dingus:
-        peepee_dingus.write('#!/bin/sh\n')
+    # with open('../foam_gen_{}.sh'.format(k), 'w') as peepee_dingus:
+    #     peepee_dingus.write('#!/bin/sh\n')
     for density in np.linspace(0.05, 0.5, 10):
-        for cv in np.linspace(0.05, 0.5, 10):
-            with open('../foam_gen_{}.sh'.format(k), 'a') as poopy_dingus:
-                poopy_dingus.write("python3 foam_gen.py 1 {:.3f} 1000 {:.3f} True gamma\n".format(cv, density))
+        for cv in np.linspace(0.55, 1.0, 10):
+            with open('../foam_gen_{}.bat'.format(k % 10), 'a') as poopy_dingus:
+                poopy_dingus.write("py foam_gen.py 1 {:.3f} 1000 {:.3f} False gamma\n".format(cv, density))
             # print("py foam_gen.py 1 {:.3f} 1000 {:.3f} True".format((i+4)*0.025, density_update1((j+1)*0.025)))
 #
 # Batch for Gamma foams
