@@ -36,15 +36,16 @@ def wall_overlap(my_loc, bub, cube_width):
 
 
 @jit(nopython=True)
-def overlap(my_loc, bub, close_locs, close_rads, open_cell):
+def overlap(my_loc, bub, close_locs, close_rads, olp):
     # Loop through the close bubbles
     for i in range(len(close_locs)):
-        # In non-open cell case, check for overlap -> distance less than the sum of radii
-        if not open_cell and calc_dist_numba(my_loc, close_locs[i]) < bub + close_rads[i]:
-            return True
-        # In open cell case, check for encapsulation -> distance less than the difference of radii
-        elif open_cell and calc_dist_numba(my_loc, close_locs[i]) < max(bub, close_rads[i]):
-            return True
+        # We need to see if the distance is less than the sum of the
+        if bub < close_rads[i]:
+            if calc_dist_numba(my_loc, close_locs[i]) < close_rads[i] + (1 - olp) * bub:
+                return True
+        else:
+            if calc_dist_numba(my_loc, close_locs[i]) < bub + (1 - olp) * close_rads[i]:
+                return True
     return False
 
 
@@ -104,8 +105,8 @@ def find_bubs(bubble_radii, num_boxes, cube_width, sub_box_size, max_bub_radius,
 
 def make_foam(sys, print_actions):
     # Get the variables
-    mu, cv, n, density, open_cell, dist = sys.data['bubble size'], sys.data['bubble sd'], sys.data['bubble num'], \
-        sys.data['bubble density'], sys.data['open cell'], sys.data['distribution']
+    mu, cv, n, density, olap, dist = (sys.data['avg'], sys.data['std'], sys.data['num'], sys.data['den'],
+                                           sys.data['olp'], sys.data['dst'])
     # Get the bubble radii
     bubble_radii = get_bubble_raddi(dist, cv, mu, n)
     # Get the maximum bubble radius
@@ -126,7 +127,7 @@ def make_foam(sys, print_actions):
         return a * dsty ** 2 + b * dsty + c
 
     # Change the open_cell density
-    if open_cell:
+    if olap > 0.0:
         density = change_open_cell_density(density)
     # Calculate the cube width by getting the cube root of total volume of the bubble radii over the density
     cube_width = cbrt(calc_tot_vol(bubble_radii) / density)
@@ -137,7 +138,7 @@ def make_foam(sys, print_actions):
     # Get the cell size
     sub_box_size = [round(cube_width / num_boxes, 3) for i in range(3)]
 
-    bubbles, sys.bubble_matrix = find_bubs(bubble_radii, num_boxes, cube_width, sub_box_size, max_bub_radius, open_cell, n, print_actions)
+    bubbles, sys.bubble_matrix = find_bubs(bubble_radii, num_boxes, cube_width, sub_box_size, max_bub_radius, olap, n, print_actions)
     # if open_cell:
     #     new_density = record_density(bubbles, [[0, 0, 0], [cube_width, cube_width, cube_width]],
     #                                  sub_box_size=sub_box_size, max_bub_radius=max_bub_radius,

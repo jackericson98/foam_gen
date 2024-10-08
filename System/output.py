@@ -41,7 +41,7 @@ def write_pdb(sys, directory=None):
     with open('_'.join([str(sys.data[_]) for _ in sys.data]) + '.pdb', 'w') as pdb_file:
         try:
             # Write the header that lets vorpy know it is a foam pdb
-            pdb_file.write('REMARK foam_gen {:.3f} {} {} {} {}\n'.format(sys.box[1][1], sys.data['bubble size'], sys.data['bubble sd'], sys.data['bubble num'], sys.data['bubble density']))
+            pdb_file.write('REMARK foam_gen {:.3f} {} {} {} {}\n'.format(sys.box[1][1], sys.data['avg'], sys.data['std'], sys.data['num'], sys.data['den']))
         except TypeError:
             pass
         except KeyError:

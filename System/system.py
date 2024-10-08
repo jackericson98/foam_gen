@@ -33,7 +33,7 @@ class System:
         self.box = None                     # Bubble box          :   Vertices of the box holding the bubbles
 
         # Set up the file attributes
-        self.data = {'open cell': False}     # Data                :   Additional data provided by the base file
+        self.data = {'olp': 0.0}            # Data                :   Additional data provided by the base file
         self.dir = output_directory         # Output Directory    :   Output directory for the export files
         self.vpy_dir = os.getcwd()          # Vorpy Directory     :   Directory that vorpy is running out of
         self.max_atom_rad = 0               # Max atom rad        :   Largest radius of the system for reference
@@ -51,11 +51,29 @@ class System:
 
     def read_argv(self):
         # Set up the data dictionary
-        self.data = {'bubble size': 1, 'bubble sd': 0.1, 'bubble num': 100,
-                     'bubble density': 0.25, 'open cell': False, 'distribution': 'lognormal'}
+        self.data = {'avg': 1, 'std': 0.1, 'num': 1000, 'den': 0.25, 'olp': 0.0, 'dst': 'lognormal'}
+        setting_names = {
+            **{_: 'avg' for _ in {'size', 'average', 'mean', 'sz', 'avg'}},
+            **{_: 'std' for _ in {'std', 'cv', 'variance', 'standard_deviation', 'coefficient_of_variation'}},
+            **{_: 'num' for _ in {'num', 'number', 'amount', 'quantity', 'bubbles', 'nmbr'}},
+            **{_: 'den' for _ in {'den', 'density', 'packing'}},
+            **{_: 'olp' for _ in {'olp', 'overlap', 'crossing'}},
+            **{_: 'dst' for _ in {'dst', 'dist', 'distribution', 'pdf'}}
+        }
+        # First check to see if a setting has been named
+        if any([_.lower() in setting_names for _ in self.args]):
+            i = 0
+            # Loop through the different settings that are set
+            while i < len(self.args):
+                # Check to see if the setting is in the dictionary in the settings names
+                if self.args[i].lower() in setting_names:
+                    # Set the settings
+                    self.data[setting_names[self.args[i].lower()]] = self.args[i + 1]
+                    i += 1
+                i += 1
 
         # Check to see if argv have been made
-        if len(self.args) > 1:
+        elif len(self.args) > 1:
             args = self.args[1:]
             for i, data in enumerate(self.data):
                 if i >= len(args):
@@ -65,34 +83,39 @@ class System:
         # If we want to prompt the user
         else:
             self.data = settings_gui()
-        # Check the open call condition:
-        try:
-            if self.data['open cell'].lower() in ['true', 't', '1']:
-               open_cell = True
-            else:
-                open_cell = False
-        except AttributeError:
-            open_cell = False
-        self.data = {'bubble size': float(self.data['bubble size']), 'bubble sd': float(self.data['bubble sd']), 'bubble num': int(self.data['bubble num']),
-                     'bubble density': float(self.data['bubble density']), 'open cell': open_cell, 'distribution': self.data['distribution']}
+
+        # Check the open cell condition:
+        if self.data['olp'].lower() in ['true', 't', '1']:
+            self.data['olp'] = 1.0
+        elif self.data['olp'].lower() in ['false', 'f', '0']:
+            self.data['olp'] = 0.0
+
+        # Once done set the settings' to their correct variable type
+        self.data = {'avg': float(self.data['avg']), 'std': float(self.data['std']), 'num': int(self.data['num']),
+                     'den': float(self.data['den']), 'olp': float(self.data['olp']), 'dst': self.data['dst']}
         self.make_foam()
         output_all(self)
 
     def prompt(self, bubble_size=None, bubble_sd=None, bubble_num=None, bubble_density=None, open_cell=None):
         # Get the system information
         if bubble_size is None:
-            self.data['bubble size'] = float(input("Enter mean bubble size - "))
+            self.data['avg'] = float(input("Enter mean bubble size - "))
         if bubble_sd is None:
-            self.data['bubble sd'] = float(input("Enter bubble standard deviation - "))
+            self.data['std'] = float(input("Enter bubble standard deviation - "))
         if bubble_num is None:
-            self.data['bubble num'] = int(input("Enter number of bubbles - "))
+            self.data['num'] = int(input("Enter number of bubbles - "))
         if bubble_density is None:
-            self.data['bubble density'] = float(input("Enter bubble density - "))
+            self.data['den'] = float(input("Enter bubble density - "))
         if open_cell is None:
             opc = input("Open cell (overlapping)? - ")
             # If user says yes, default is True so no need to catch those cases
             if opc.lower() in ['n', 'no', 'f', 'false']:
-                self.data['open cell'] = False
+                self.data['olp'] = 0.0
+            else:
+                try:
+                    self.data['olp'] = float(opc)
+                except ValueError:
+                    self.data['olp'] = 0.0
 
     def set_loaded_bubs(self):
         # Set the default residue and chain
