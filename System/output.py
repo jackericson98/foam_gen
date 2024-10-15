@@ -1,16 +1,20 @@
 from System.draw import draw_line
 import numpy as np
 import os
-from System.calcs import pdb_line
+from System.calcs import pdb_line, periodicize
 
 
-def output_all(sys, dir=None):
+def output_all(sys, my_dir=None):
+    # Set up the bubbles and box variables
     bubbles, verts = sys.bubbles, sys.box
+    # Check to see if the user wants to do periodic bubbling
+    if sys.data['pbc']:
+        periodicize(sys)
     if sys.dir is not None:
         # Write the output files
         file_name = '_'.join([str(sys.data[_]) for _ in sys.data])
         my_dir = set_sys_dir(sys.dir + '/' + file_name)
-    elif dir is None:
+    elif my_dir is None:
         # Write the output files
         file_name = '_'.join([str(sys.data[_]) for _ in sys.data])
         my_dir = set_sys_dir('Data/user_data/' + file_name)
