@@ -16,13 +16,18 @@ import numpy as np
 
 
 # Batch of lognormal foams
-for k in range(20):
-    # with open('../foam_gen_{}.sh'.format(k), 'w') as peepee_dingus:
-    #     peepee_dingus.write('#!/bin/sh\n')
+
+count, k = 1, 0
+for cv in {0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0}:
     for density in np.linspace(0.05, 0.5, 10):
-        for cv in np.linspace(0.55, 1.0, 10):
-            with open('../foam_gen_{}.bat'.format(k % 10), 'a') as poopy_dingus:
-                poopy_dingus.write("py foam_gen.py 1 {:.3f} 1000 {:.3f} False gamma\n".format(cv, density))
+        with open('../foam_gen_{}.sh'.format(k), 'a') as poopy_dingus:
+            for _ in range(20):
+                if count % 100 == 0:
+                    k += 1
+                    with open('../foam_gen_{}.sh'.format(k), 'w') as peepee_dingus:
+                        peepee_dingus.write('#!/bin/sh\n')
+                poopy_dingus.write("python foam_gen.py bn 1000 cv {} den {} olp 0.0 pbc t distribution gamma\n".format(cv, density))
+                count += 1
             # print("py foam_gen.py 1 {:.3f} 1000 {:.3f} True".format((i+4)*0.025, density_update1((j+1)*0.025)))
 #
 # Batch for Gamma foams
