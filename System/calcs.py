@@ -83,6 +83,48 @@ def get_bubbles(bubble_matrix, cells, sub_box_size, dist=0):
     return atoms
 
 
+def get_bubbles1(ball_matrix, cells, sub_box_size, dist=0, periodic=False):
+    """
+    Takes in the cells and the number of additional cells to search and returns an atom list
+    :param cells: The initial boxes in the network to stem from
+    :param dist: The number of cells out from the initial set of cells to search
+    :param periodic: Boolean indicating whether to apply periodic boundary conditions
+    """
+
+    # Calculate the reach based on distance and sub-box size
+    reach = int(dist / min(sub_box_size))
+
+    # Determine the size of the matrix grid
+    n = ball_matrix[-1, -1, -1][0]
+
+    # Ensure 'cells' is iterable over indices even if a single cell is provided
+    if isinstance(cells[0], int):
+        cells = [cells]
+    # Gather all indices considering periodic boundaries
+    balls = []
+    for cell in cells:
+        for i in range(cell[0] - reach, cell[0] + reach + 1):
+            for j in range(cell[1] - reach, cell[1] + reach + 1):
+                for k in range(cell[2] - reach, cell[2] + reach + 1):
+                    # Compute wrapped indices if periodic, else bounded indices
+                    if periodic:
+                        x, y, z = (i + n) % n, (j + n) % n, (k + n) % n
+                    else:
+                        if 0 <= i < n and 0 <= j < n and 0 <= k < n:
+                            x, y, z = i, j, k
+                        else:
+                            continue  # Skip indices outside the bounds
+
+                    # Try to add balls from the calculated indices
+                    try:
+                        balls.extend(ball_matrix[x, y, z])
+                    except KeyError:
+                        pass  # If a cell is empty or key error occurs, skip
+    # print(cells)
+    # print('\nindices = ', indices)
+    return balls
+
+
 def calc_box(self, locs, rads):
     """
     Determines the dimensions of a box x times the size of the atoms
@@ -155,7 +197,10 @@ def periodicize(sys, mirror=False):
             # Change the residue so that it is identified as separate
             new_bub['residue'] = 'OUT'
             # Change the chain name so that it's identified as separate
-            new_bub['chain'] = 'B'
+            if bubble['chain'] != 'E':
+                new_bub['chain'] = 'B'
+            else:
+                new_bub['chain'] = 'E'
             # Add the bubble to the list
             bubbles.append(new_bub)
 
