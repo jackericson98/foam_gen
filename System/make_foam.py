@@ -159,7 +159,7 @@ def make_foam(sys, print_actions):
                                      sub_box_size=sub_box_size, max_bub_radius=max_bub_radius,
                                      bubble_matrix=sys.bubble_matrix, pbc=sys.data['pbc'])
         with open(sys.vpy_dir + '/Data/density_adjustments.txt', 'a') as density_logs:
-            density_logs.write("{} {} {} {} {} {} {}\n".format(new_density, mu, cv, n, density, dist, olap))
+            density_logs.write("{} {} {} {} {} {} {} {}\n".format(new_density, mu, cv, n, density, dist, olap, sys.data['pbc']))
 
     # Create the dataframe for the bubbles
     sys.bubbles = DataFrame(bubbles)
