@@ -10,15 +10,16 @@ def calc_dist(l0, l1):
 
 
 @jit(nopython=True)
-def calc_dist_numba(l0, l1):
-    """
-    Calculate distance function used to simplify code
-    :param l0: Point 0 list, array, n-dimensional must match point 1
-    :param l1: Point 1 list, array, n-dimensional must match point 0
-    :return: float distance between the two points
-    """
-    # Pythagorean theorem
-    return sqrt(sum(square(l0 - l1)))
+def calc_dist_numba(my_loc, other_loc, box_side=None, periodic=True):
+    if periodic and box_side is not None:
+        # Calculate the minimum distance accounting for periodic boundary conditions
+        dist_vector = [min(abs(my_loc[dim] - other_loc[dim]), box_side - abs(my_loc[dim] - other_loc[dim])) for dim in
+                       range(3)]
+        return (dist_vector[0] ** 2 + dist_vector[1] ** 2 + dist_vector[2] ** 2) ** 0.5
+    else:
+        # Standard Euclidean distance calculation
+        return ((my_loc[0] - other_loc[0])**2 + (my_loc[1] - other_loc[1])**2 + (my_loc[2] - other_loc[2])**2)**0.5
+
 
 @jit(nopython=True)
 def box_search_numba(loc, num_splits, box_verts):
@@ -40,50 +41,7 @@ def box_search(loc, num_splits, box_verts):
     return box_search_numba(loc, num_splits, array(box_verts))
 
 
-def get_bubbles(bubble_matrix, cells, sub_box_size, dist=0):
-    """
-    Takes in the cells and the number of additional cells to search and returns an atom list
-    :param cells: The initial boxes in the network to stem from
-    :param dist: The number of cells out from the initial set of cells to search
-    """
-
-    # Get the reach around the box to grab atoms from
-    reach = int(dist / min(sub_box_size)) + 4
-    # Grab the number of cells in the grid
-    n = bubble_matrix[-1, -1, -1][0]
-    # If a single cell is entered
-    if type(cells[0]) is int:
-        cells = [cells]
-    # Get the min and max of the cells
-    ndx_min = [inf, inf, inf]
-    ndx_max = [-inf, -inf, -inf]
-    # Go through the cells and set the minimum and maximum indexes for xyz for a rectangle containing the atoms
-    for cell in cells:
-        # Check each xyz index to see if they are larger or smaller than the max or min
-        for i in range(3):
-            if cell[i] < ndx_min[i]:
-                ndx_min[i] = cell[i]
-            if cell[i] > ndx_max[i]:
-                ndx_max[i] = cell[i]
-    xs = [x for x in range(max(0, -reach + ndx_min[0]), reach + ndx_max[0])]
-    ys = [y for y in range(max(0, -reach + ndx_min[1]), reach + ndx_max[1])]
-    zs = [z for z in range(max(0, -reach + ndx_min[2]), reach + ndx_max[2])]
-    atoms = []
-    # Get atoms
-    for i in xs:
-        if 0 <= i < n:
-            for j in ys:
-                if 0 <= j < n:
-                    for k in zs:
-                        if 0 <= k < n:
-                            try:
-                                atoms += bubble_matrix[i, j, k]
-                            except KeyError:
-                                pass
-    return atoms
-
-
-def get_bubbles1(ball_matrix, cells, sub_box_size, dist=0, periodic=False):
+def get_bubbles(ball_matrix, cells, sub_box_size, dist=0, periodic=False):
     """
     Takes in the cells and the number of additional cells to search and returns an atom list
     :param cells: The initial boxes in the network to stem from
