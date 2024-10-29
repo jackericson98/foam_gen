@@ -51,7 +51,7 @@ class System:
 
     def read_argv(self):
         # Set up the data dictionary
-        self.data = {'avg': 1, 'std': 0.1, 'num': 1000, 'den': 0.25, 'olp': 0.0, 'dst': 'lognormal', 'pbc': False}
+        self.data = {'avg': 1, 'std': 0.1, 'num': 1000, 'den': 0.25, 'olp': 0.0, 'dst': 'gamma', 'pbc': False}
         setting_names = {
             **{_: 'avg' for _ in {'size', 'average', 'mean', 'sz', 'avg'}},
             **{_: 'std' for _ in {'std', 'cv', 'variance', 'standard_deviation', 'coefficient_of_variation'}},
