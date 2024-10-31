@@ -1,6 +1,9 @@
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.pipeline import Pipeline
 from sklearn.metrics import mean_squared_error
 from joblib import dump, load
 import pandas as pd
@@ -10,27 +13,31 @@ file_path = '../Data/density_adjustments.txt'
 data = pd.read_csv(file_path, sep=' ', header=None)
 
 # Assign the columns
-data.columns = ['Adjusted Density', 'Mean', 'CV', 'Number', 'Set Density', 'Distribution', 'Overlap']
+data.columns = ['Adjusted Density', 'Mean', 'CV', 'Number', 'Set Density', 'Distribution', 'Overlap', 'PBC']
+
+# Change the PBC data
+data['PBC'] = data['PBC'].astype(int)
 
 # One-hot encode the 'distribution' column
-data_encoded = pd.get_dummies(data, columns=['Distribution'])
+# Define the ColumnTransformer to handle the encoding of categorical variables
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('dist', OneHotEncoder(), ['Distribution'])  # Apply OneHotEncoder to the 'distribution' column
+    ],
+    remainder='passthrough'  # Keep all other columns unchanged
+)
+
+# Create a pipeline that includes preprocessing and the model
+pipeline = Pipeline(steps=[('preprocessor', preprocessor),
+                           ('regressor', LinearRegression())])
 
 # Separate the features and the target variable
-X = data_encoded.drop('Set Density', axis=1)  # Drop the target to isolate features
+X = data.drop('Set Density', axis=1)
 y = data['Set Density']
 
-# Split dataset into training and testing
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+# Fit the pipeline
+pipeline.fit(X, y)
 
-# Initialize and train the Naive Bayes classifier
-lr = LinearRegression()
-model = lr.fit(X_train, y_train)
+# Save the pipeline
+dump(pipeline, '../Data/linreg_pipeline.pkl')
 
-
-# Test the model
-predictions = model.predict(X_test)
-print(f"Mean Squared Error: {mean_squared_error(y_test, predictions)}")
-
-
-# Save the model to a file
-dump(model, '../Data/naive_bayes_model.joblib')

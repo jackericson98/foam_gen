@@ -84,7 +84,7 @@ class System:
         # If we want to prompt the user
         else:
             self.data = settings_gui()
-
+        print(self.data)
         # Check the open cell condition:
         if type(self.data['olp']) is str and self.data['olp'].lower() in ['true', 't', '1']:
             self.data['olp'] = 1.0

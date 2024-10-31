@@ -1,8 +1,11 @@
 import time
+
+import pandas as pd
 from numpy import sqrt, array, random, cbrt, linspace
 from pandas import DataFrame
 from System.calcs import get_bubbles, calc_dist_numba, calc_tot_vol
 from System.distributions import get_bubble_raddi
+from joblib import load
 
 from numba import jit
 
@@ -11,7 +14,7 @@ def record_density(bubbles, box, sub_box_size, bubble_matrix, max_bub_radius, n_
     count = 0
     for i in range(n_samples):
         # Calculate the percentage
-        print("\r Checking Density {} %".format(100 * round(i/n_samples, 4)), end="")
+        print("\r Checking Density {:.2f} %".format(100 * round(i/n_samples, 4)), end="")
 
         point = [random.uniform(min(box[0][i], box[1][i]), max(box[0][i], box[1][i])) for i in range(3)]
         # Find the box that the bubble would belong to
@@ -117,34 +120,24 @@ def find_bubs(bubble_radii, num_boxes, cube_width, sub_box_size, max_bub_radius,
 
 def make_foam(sys, print_actions):
     # Get the variables
-    mu, cv, n, density, olap, dist = (sys.data['avg'], sys.data['std'], sys.data['num'], sys.data['den'],
-                                           sys.data['olp'], sys.data['dst'])
+    mu, cv, n, density, olap, dist, pbc = (sys.data['avg'], sys.data['std'], sys.data['num'], sys.data['den'],
+                                           sys.data['olp'], sys.data['dst'], sys.data['pbc'])
     # Get the bubble radii
     bubble_radii = get_bubble_raddi(dist, cv, mu, n)
     # Get the maximum bubble radius
     max_bub_radius = max(bubble_radii)
 
-    # Get the open cell density
-    # def change_open_cell_density(dsty):
-    #     if n < 10:
-    #         a, b, c = 1.3379916075144123, 1.5342161903140346, -0.049539624149683714
-    #     elif n < 100:
-    #         a, b, c = 2.617546924616389, 0.5263832332311094, 0.023304967275296712
-    #     elif n < 1000:
-    #         a, b, c = 1.6102372828978275, 0.7263830756664165, 0.014383340152633836
-    #     elif n < 10000:
-    #         a, b, c = 1.333495416302907, 0.763842119925516, 0.014253487381526
-    #     else:
-    #         a, b, c = 1.2139394583920557, 0.7808992862460553, 0.014317251455209012
-    #     return a * dsty ** 2 + b * dsty + c
-    #
-    # # Change the open_cell density
-    # if olap > 0.0:
-    #     density = change_open_cell_density(density1)
-    # else:
-    #     density = density1
+    # Adjust the density using the model
+    if olap > 0.0:
+        model = load('./Data/linreg_pipeline.pkl')
+        new_data = pd.DataFrame({'Adjusted Density': [density], 'Mean': [mu], 'CV': [cv], 'Number': [n],
+                                 'Distribution': [dist], 'Overlap': [olap], 'PBC': pbc})
+        new_density = model.predict(new_data)[0]
+    else:
+        new_density = density
+
     # Calculate the cube width by getting the cube root of total volume of the bubble radii over the density
-    cube_width = cbrt(calc_tot_vol(bubble_radii) / density)
+    cube_width = cbrt(calc_tot_vol(bubble_radii) / new_density)
     # Create the box
     sys.box = [[0, 0, 0], [cube_width, cube_width, cube_width]]
     # Set the number of boxes to roughly 5x the number of atoms must be a cube for the of cells per row/column/aisle
@@ -154,12 +147,12 @@ def make_foam(sys, print_actions):
 
     bubbles, sys.bubble_matrix = find_bubs(bubble_radii, num_boxes, cube_width, sub_box_size, max_bub_radius, olap, n,
                                            print_actions, periodic=sys.data['pbc'], box_width=sys.box[1][0])
-    if olap > 0:
-        new_density = record_density(bubbles, [[0, 0, 0], [cube_width, cube_width, cube_width]],
-                                     sub_box_size=sub_box_size, max_bub_radius=max_bub_radius,
-                                     bubble_matrix=sys.bubble_matrix, pbc=sys.data['pbc'])
-        with open(sys.vpy_dir + '/Data/density_adjustments.txt', 'a') as density_logs:
-            density_logs.write("{} {} {} {} {} {} {} {}\n".format(new_density, mu, cv, n, density, dist, olap, sys.data['pbc']))
+    # if olap > 0:
+    #     new_density = record_density(bubbles, [[0, 0, 0], [cube_width, cube_width, cube_width]],
+    #                                  sub_box_size=sub_box_size, max_bub_radius=max_bub_radius,
+    #                                  bubble_matrix=sys.bubble_matrix, pbc=sys.data['pbc'])
+    #     with open(sys.vpy_dir + '/Data/density_adjustments.txt', 'a') as density_logs:
+    #         density_logs.write("{} {} {} {} {} {} {} {}\n".format(new_density, mu, cv, n, density, dist, olap, sys.data['pbc']))
 
     # Create the dataframe for the bubbles
     sys.bubbles = DataFrame(bubbles)
