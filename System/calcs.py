@@ -50,7 +50,7 @@ def get_bubbles(ball_matrix, cells, sub_box_size, dist=0, periodic=False):
     """
 
     # Calculate the reach based on distance and sub-box size
-    reach = int(dist / min(sub_box_size))
+    reach = int(dist / min(sub_box_size)) + 1
 
     # Determine the size of the matrix grid
     n = ball_matrix[-1, -1, -1][0]
@@ -61,9 +61,9 @@ def get_bubbles(ball_matrix, cells, sub_box_size, dist=0, periodic=False):
     # Gather all indices considering periodic boundaries
     balls = []
     for cell in cells:
-        for i in range(cell[0] - reach, cell[0] + reach + 1):
-            for j in range(cell[1] - reach, cell[1] + reach + 1):
-                for k in range(cell[2] - reach, cell[2] + reach + 1):
+        for i in range(cell[0] - reach, cell[0] + reach):
+            for j in range(cell[1] - reach, cell[1] + reach):
+                for k in range(cell[2] - reach, cell[2] + reach):
                     # Compute wrapped indices if periodic, else bounded indices
                     if periodic:
                         x, y, z = (i + n) % n, (j + n) % n, (k + n) % n
