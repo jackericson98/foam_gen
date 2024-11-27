@@ -57,12 +57,14 @@ def settings_gui():
     tk.Label(root, text='(1 - inf)').grid(row=2, column=2)
 
     # Density Entry/Slider
-    tk.Label(root, text="Den").grid(row=3, column=0)
+    tk.Label(root, text="Density").grid(row=3, column=0)
     tk.Scale(root, variable=den_var, from_=0.001, to=1, orient="horizontal", resolution=0.001).grid(row=3, column=1)
+    tk.Entry(root, textvariable=den_var).grid(row=3, column=2)
 
     # Overlap Entry/Slider
-    tk.Label(root, text="Olp").grid(row=4, column=0)
+    tk.Label(root, text="Overlap").grid(row=4, column=0)
     tk.Scale(root, variable=olp_var, from_=0.0, to=2.0, orient="horizontal", resolution=0.01).grid(row=4, column=1)
+    tk.Entry(root, textvariable=olp_var).grid(row=4, column=2)
 
     # Distribution Dropdown
     tk.Label(root, text="Dst").grid(row=5, column=0)
