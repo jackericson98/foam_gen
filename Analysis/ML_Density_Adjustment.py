@@ -2,7 +2,7 @@ from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder, PolynomialFeatures
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import mean_squared_error
 from joblib import dump, load
@@ -15,7 +15,7 @@ data = pd.read_csv(file_path, sep=' ', header=None)
 # Assign the columns
 data.columns = ['Adjusted Density', 'Mean', 'CV', 'Number', 'Set Density', 'Distribution', 'Overlap', 'PBC']
 
-# Change the PBC data
+# Change the PBC data to integer
 data['PBC'] = data['PBC'].astype(int)
 
 # One-hot encode the 'distribution' column
@@ -27,9 +27,12 @@ preprocessor = ColumnTransformer(
     remainder='passthrough'  # Keep all other columns unchanged
 )
 
-# Create a pipeline that includes preprocessing and the model
-pipeline = Pipeline(steps=[('preprocessor', preprocessor),
-                           ('regressor', LinearRegression())])
+# Create a pipeline that includes preprocessing, polynomial features, and the regressor
+pipeline = Pipeline(steps=[
+    ('preprocessor', preprocessor),
+    ('poly', PolynomialFeatures(degree=2)),  # Add polynomial features
+    ('regressor', LinearRegression())
+])
 
 # Separate the features and the target variable
 X = data.drop('Set Density', axis=1)
@@ -40,4 +43,3 @@ pipeline.fit(X, y)
 
 # Save the pipeline
 dump(pipeline, '../Data/linreg_pipeline.pkl')
-
