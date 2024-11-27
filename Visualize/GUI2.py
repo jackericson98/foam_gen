@@ -2,7 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 
 # Default values for data
-data = {'avg': 1, 'std': 0.1, 'num': 1000, 'den': 0.25, 'olp': 0.0, 'dst': 'gamma', 'pbc': False}
+data = {'avg': 1, 'std': 0.1, 'num': 1000, 'den': 0.25, 'olp': 0.0, 'dst': 'gamma', 'pbc': False, 'sar': False}
+
 
 def settings_gui():
     # Function to collect values and update the data dictionary
@@ -17,7 +18,8 @@ def settings_gui():
             "den": float(den_var.get()),
             "olp": float(olp_var.get()),
             "dst": dst_var.get().lower(),
-            "pbc": pbc_var.get()
+            "pbc": pbc_var.get(),
+            "sar": sar_var.get()
         }
         root.destroy()
 
@@ -37,6 +39,7 @@ def settings_gui():
     olp_var = tk.DoubleVar(value=data['olp'])
     dst_var = tk.StringVar(value=data['dst'].capitalize())
     pbc_var = tk.BooleanVar(value=data['pbc'])
+    sar_var = tk.BooleanVar(value=data['sar'])
 
     # Average Entry
     tk.Label(root, text="Avg").grid(row=0, column=0)
@@ -44,7 +47,7 @@ def settings_gui():
     tk.Label(root, text='(0.001 - inf)').grid(row=0, column=2)
 
     # Standard Deviation Entry
-    tk.Label(root, text="Std").grid(row=1, column=0)
+    tk.Label(root, text="CV").grid(row=1, column=0)
     tk.Entry(root, textvariable=std_var).grid(row=1, column=1)
     tk.Label(root, text='(0.001 - inf)').grid(row=1, column=2)
 
@@ -70,17 +73,16 @@ def settings_gui():
     dst_menu.current(dst_options.index(data['dst'].capitalize()))
 
     # Periodic Boundary Condition Checkbox
-    tk.Checkbutton(root, text="PBC", variable=pbc_var).grid(row=6, column=0, columnspan=3)
+    tk.Checkbutton(root, text="Periodic Boundary Conditions", variable=pbc_var).grid(row=6, column=0, columnspan=3)
+
+    # Standardize Atomic Radii Checkbox
+    tk.Checkbutton(root, text="Standardize Atomic Radii", variable=sar_var).grid(row=7, column=0, columnspan=2)
 
     # Buttons
-    tk.Button(root, text="Apply", command=apply_values).grid(row=7, column=1)
-    tk.Button(root, text="Cancel", command=cancel).grid(row=7, column=2)
+    tk.Button(root, text="Apply", command=apply_values).grid(row=8, column=1)
+    tk.Button(root, text="Cancel", command=cancel).grid(row=8, column=2)
 
     # Run the GUI
     root.mainloop()
 
     return data
-
-# Run the settings GUI
-output_data = settings_gui()
-print(output_data)

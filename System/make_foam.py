@@ -6,6 +6,7 @@ from pandas import DataFrame
 from System.calcs import get_bubbles, calc_dist_numba, calc_tot_vol
 from System.distributions import get_bubble_raddi
 from joblib import load
+from System.atomic import standardize_radii_to_atomic
 
 from numba import jit
 
@@ -57,7 +58,7 @@ def overlap(my_loc, bub, close_locs, close_rads, olp, box_side=None, periodic=Tr
 
 
 def find_bubs(bubble_radii, num_boxes, cube_width, sub_box_size, max_bub_radius, olap, n, print_actions, periodic=False,
-              box_width=None):
+              box_width=None, elements=None):
     # Create the bubble list
     bubbles = []
     # Instantiate the grid structure of lists is locations representing a grid
@@ -104,9 +105,16 @@ def find_bubs(bubble_radii, num_boxes, cube_width, sub_box_size, max_bub_radius,
         # # Check the location of the bubble
         # if any([my_loc[i] < bub_rad or my_loc[i] + bub_rad > cube_width for i in range(3)]):
         #     residue, chain = 'BUB', 'E'
+        # Check that the element exists
+        element = None
+        name = str(hex(i))[2:]
+        if elements is not None:
+            element = elements[i]
+            name = elements[i]
+
         # Create the bubble
-        bubbles.append({'chain': chain, 'loc': my_loc, 'rad': bub_rad, 'num': i, 'name': str(hex(i))[2:], 'asurfs': [],
-                        'residue': residue, 'box': my_box})
+        bubbles.append({'chain': chain, 'loc': my_loc, 'rad': bub_rad, 'num': i, 'name': name, 'asurfs': [],
+                        'residue': residue, 'box': my_box, 'element': element})
         # Add the atom to the box
         try:
             bubble_matrix[my_box[0], my_box[1], my_box[2]].append(i)
@@ -120,10 +128,16 @@ def find_bubs(bubble_radii, num_boxes, cube_width, sub_box_size, max_bub_radius,
 
 def make_foam(sys, print_actions):
     # Get the variables
-    mu, cv, n, density, olap, dist, pbc = (sys.data['avg'], sys.data['std'], sys.data['num'], sys.data['den'],
-                                           sys.data['olp'], sys.data['dst'], sys.data['pbc'])
+    mu, cv, n, density, olap, dist, pbc, sar = (sys.data['avg'], sys.data['std'], sys.data['num'], sys.data['den'],
+                                                sys.data['olp'], sys.data['dst'], sys.data['pbc'], sys.data['sar'])
     # Get the bubble radii
     bubble_radii = get_bubble_raddi(dist, cv, mu, n)
+
+    # Check if the radii need to be standardized to atomic radii
+    atom_names = None
+    if sar:
+        bubble_radii, atom_names = standardize_radii_to_atomic(bubble_radii)
+
     # Get the maximum bubble radius
     max_bub_radius = max(bubble_radii)
 
@@ -146,7 +160,8 @@ def make_foam(sys, print_actions):
     sub_box_size = [round(cube_width / num_boxes, 3) for i in range(3)]
 
     bubbles, sys.bubble_matrix = find_bubs(bubble_radii, num_boxes, cube_width, sub_box_size, max_bub_radius, olap, n,
-                                           print_actions, periodic=sys.data['pbc'], box_width=sys.box[1][0])
+                                           print_actions, periodic=sys.data['pbc'], box_width=sys.box[1][0],
+                                           elements=atom_names)
     # if olap > 0:
     #     new_density = record_density(bubbles, [[0, 0, 0], [cube_width, cube_width, cube_width]],
     #                                  sub_box_size=sub_box_size, max_bub_radius=max_bub_radius,

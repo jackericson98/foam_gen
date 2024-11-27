@@ -55,12 +55,17 @@ def write_pdb(sys, directory=None):
             # Get the location string
             x, y, z = a['loc']
             occ = 1
-            elem = 'h'
-            if a['residue'] == 'OUT':
-                elem = 'n'
+            if a['element'] is not None:
+                elem = a['element']
+                res_seq = i
+            else:
+                elem = 'h'
+                if a['residue'] == 'OUT':
+                    elem = 'n'
+                res_seq = 0
             # Write the atom information
             pdb_file.write(pdb_line(ser_num=i, name=a['name'], res_name=a['residue'], chain=a['chain'], elem=elem,
-                                    x=x, y=y, z=z, occ=occ, tfact=a['rad']))
+                                    x=x, y=y, z=z, occ=occ, tfact=a['rad'], res_seq=res_seq))
     # Change back to the starting directory
     os.chdir(start_dir)
 

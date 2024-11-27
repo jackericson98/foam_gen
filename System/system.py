@@ -8,7 +8,7 @@ from scipy.interpolate import interp1d
 from scipy import stats
 import os
 from System.output import set_sys_dir, output_all
-from Visualize.GUI import settings_gui
+from Visualize.GUI2 import settings_gui
 from Visualize.mpl_visualize import plot_atoms, plt
 import scipy as sp
 from System.make_foam import make_foam
@@ -51,15 +51,17 @@ class System:
 
     def read_argv(self):
         # Set up the data dictionary
-        self.data = {'avg': 1, 'std': 0.1, 'num': 1000, 'den': 0.25, 'olp': 0.0, 'dst': 'gamma', 'pbc': False}
+        self.data = {'avg': 1, 'std': 0.1, 'num': 1000, 'den': 0.25, 'olp': 0.0, 'dst': 'gamma', 'pbc': False,
+                     'sar': False}
         setting_names = {
-            **{_: 'avg' for _ in {'size', 'average', 'mean', 'sz', 'avg'}},
+            **{_: 'avg' for _ in {'size', 'average', 'mean', 'sz', 'avg', 'mu'}},
             **{_: 'std' for _ in {'std', 'cv', 'variance', 'standard_deviation', 'coefficient_of_variation'}},
             **{_: 'num' for _ in {'num', 'number', 'amount', 'quantity', 'bubbles', 'nmbr', 'bn'}},
             **{_: 'den' for _ in {'den', 'density', 'packing'}},
-            **{_: 'olp' for _ in {'olp', 'overlap', 'crossing'}},
+            **{_: 'olp' for _ in {'olp', 'overlap', 'crossing', 'olap'}},
             **{_: 'dst' for _ in {'dst', 'dist', 'distribution', 'pdf'}},
-            **{_: 'pbc' for _ in {'pbc', 'periodic', 'cyclic'}}
+            **{_: 'pbc' for _ in {'pbc', 'periodic', 'cyclic'}},
+            **{_: 'sar' for _ in {'sar', 'std_ar'}}
         }
         # First check to see if a setting has been named
         if any([_.lower() in setting_names for _ in self.args]):
@@ -84,23 +86,28 @@ class System:
         # If we want to prompt the user
         else:
             self.data = settings_gui()
-        print(self.data)
         # Check the open cell condition:
         if type(self.data['olp']) is str and self.data['olp'].lower() in ['true', 't', '1']:
             self.data['olp'] = 1.0
         elif type(self.data['olp']) is str and self.data['olp'].lower() in ['false', 'f', '0']:
             self.data['olp'] = 0.0
 
-        # Check for periodic flags
+        # Check for periodic flags for periodic boundary conditions
         if type(self.data['pbc']) is str and self.data['pbc'].lower() in {'true', 't', 'yes', '1'}:
             self.data['pbc'] = True
         elif type(self.data['pbc']) is str and self.data['pbc'].lower() in {'false', 'f', '0', 'no'}:
             self.data['pbc'] = False
 
+        # Check for periodic flags for standardized atomic radii
+        if type(self.data['sar']) is str and self.data['sar'].lower() in {'true', 't', 'yes', '1'}:
+            self.data['sar'] = True
+        elif type(self.data['sar']) is str and self.data['sar'].lower() in {'false', 'f', '0', 'no'}:
+            self.data['sar'] = False
+
         # Once done set the settings' to their correct variable type
         self.data = {'avg': float(self.data['avg']), 'std': float(self.data['std']), 'num': int(self.data['num']),
                      'den': float(self.data['den']), 'olp': float(self.data['olp']), 'dst': self.data['dst'],
-                     'pbc': self.data['pbc']}
+                     'pbc': self.data['pbc'], 'sar': self.data['sar']}
         self.make_foam()
         output_all(self)
 
