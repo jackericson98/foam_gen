@@ -57,7 +57,7 @@ def write_pdb(sys, directory=None):
             occ = 1
             if a['element'] is not None:
                 elem = a['element']
-                res_seq = i
+                res_seq = str(hex(i))[2:]
             else:
                 elem = 'h'
                 if a['residue'] == 'OUT':
