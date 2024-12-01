@@ -5,6 +5,9 @@ from System.calcs import pdb_line, periodicize
 
 
 def output_all(sys, my_dir=None):
+    # Set the system Name
+    if sys.name is None:
+        sys.name = '_'.join([str(sys.data[_]) for _ in sys.data])
     # Set up the bubbles and box variables
     bubbles, verts = sys.bubbles, sys.box
     # Check to see if the user wants to do periodic bubbling
@@ -23,7 +26,7 @@ def output_all(sys, my_dir=None):
         my_dir = set_sys_dir('foam')
 
     write_pdb(sys, directory=my_dir)
-    set_pymol_atoms(bubbles, directory=my_dir)
+    write_pymol_atoms(sys, directory=my_dir)
     write_box(verts, file_name='retaining_box', directory=my_dir, radius=0.01 * sys.box[1][0])
 
 
@@ -42,7 +45,7 @@ def write_pdb(sys, directory=None):
     if directory is not None:
         os.chdir(directory)
     # Open the file for writing
-    with open('_'.join([str(sys.data[_]) for _ in sys.data]) + '.pdb', 'w') as pdb_file:
+    with open(sys.name + '.pdb', 'w') as pdb_file:
         try:
             # Write the header that lets vorpy know it is a foam pdb
             pdb_file.write('REMARK foam_gen {:.3f} {} {} {} {}\n'.format(sys.box[1][1], sys.data['avg'], sys.data['std'], sys.data['num'], sys.data['den']))
@@ -57,37 +60,34 @@ def write_pdb(sys, directory=None):
             occ = 1
             if a['element'] is not None:
                 elem = a['element']
-                res_seq = str(hex(i))[2:]
             else:
                 elem = 'h'
                 if a['residue'] == 'OUT':
                     elem = 'n'
-                res_seq = 0
             # Write the atom information
             pdb_file.write(pdb_line(ser_num=i, name=a['name'], res_name=a['residue'], chain=a['chain'], elem=elem,
-                                    x=x, y=y, z=z, occ=occ, tfact=a['rad'], res_seq=res_seq))
+                                    x=x, y=y, z=z, occ=occ, tfact=a['rad']))
     # Change back to the starting directory
     os.chdir(start_dir)
 
 
-def set_pymol_atoms(bubbles, directory=None):
-
-    """
-    Creates a script to set the radii of the spheres in pymol
-    :param sys:
-    :return:
-    """
-    # Make note of the starting directory
+def write_pymol_atoms(sys, set_sol=True, directory=None, file_name=None):
     start_dir = os.getcwd()
     if directory is not None:
         os.chdir(directory)
-    special_radii = {}
-    # Check to see if the atoms in the system are all accounted for
-
+    else:
+        os.chdir(sys.dir)
+    if file_name is None:
+        file_name = 'set_atoms.pml'
+    if not set_sol:
+        file_name = file_name[:-4] + '_nosol.pml'
     # Create the file
-    with open('set_atoms.pml', 'w') as file:
-        for i, bubble in bubbles.iterrows():
-            file.write("alter (residue {} name {}), vdw={}\n".format(bubble['residue'], bubble['name'], bubble['rad']))
+    with open(file_name, 'w') as file:
+        for i, ball in sys.bubbles.iterrows():
+            if not set_sol and ball.name.lower() == 'sol':
+                continue
+            file.write("alter {} and c. {} and r. {} and n. {}, vdw={}\n".format(sys.name, ball['chain'], ball['residue'], ball['name'], ball['rad']))
+        # Rebuild the system
         file.write("\nrebuild")
     os.chdir(start_dir)
 

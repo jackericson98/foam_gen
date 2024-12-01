@@ -121,8 +121,6 @@ def calc_tot_vol(radii):
 
 def pdb_line(atom="ATOM", ser_num=0, name="", alt_loc=" ", res_name="", chain="A", res_seq=0, cfir="", x=0, y=0, z=0,
              occ=1, tfact=0, seg_id="", elem="h", charge=""):
-    if chain == 'Z':
-        chain = ' '
     return "{:<6}{:>5} {:<4}{:1}{:>3} {:^1}{:>4}{:1}   {:>8.3f}{:>8.3f}{:>8.3f}{:>6.2f}{:>6.2f}      {:<4}{:>2}{}\n"\
         .format(atom, ser_num, name, alt_loc, res_name, chain, res_seq, cfir, x, y, z, occ, tfact, seg_id, elem, charge)
 
@@ -132,11 +130,14 @@ def periodicize(sys, mirror=False):
     sys_bubs = sys.bubbles.copy().to_dict(orient='records')
     # New list
     bubbles = [_ for _ in sys_bubs]
+    chain_letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
+                     'U', 'V', 'W', 'X', 'Y', 'Z']
     # Loop through the first 6
-    for direction in [[-1, 0, 0], [1, 0, 0], [0, -1, 0], [0, 1, 0], [0, 0, -1], [0, 0, 1], [-1, -1, 0], [-1, 1, 0],
-                      [-1, 0, -1], [-1, 0, 1], [1, -1, 0], [1, 1, 0], [1, 0, -1], [1, 0, 1], [0, -1, -1], [0, -1, 1],
-                      [0, 1, -1], [0, 1, 1], [-1, -1, -1], [-1, -1, 1], [-1, 1, -1], [-1, 1, 1], [1, -1, -1],
-                      [1, -1, 1], [1, 1, -1], [1, 1, 1]]:
+    for i, direction in enumerate([[-1, 0, 0], [1, 0, 0], [0, -1, 0], [0, 1, 0], [0, 0, -1], [0, 0, 1], [-1, -1, 0],
+                                   [-1, 1, 0], [-1, 0, -1], [-1, 0, 1], [1, -1, 0], [1, 1, 0], [1, 0, -1], [1, 0, 1],
+                                   [0, -1, -1], [0, -1, 1], [0, 1, -1], [0, 1, 1], [-1, -1, -1], [-1, -1, 1],
+                                   [-1, 1, -1], [-1, 1, 1], [1, -1, -1], [1, -1, 1], [1, 1, -1], [1, 1, 1]]):
+        chain = chain_letters[i]
         for bubble in sys_bubs:
             # First we need to copy the bubble
             new_bub = bubble.copy()
@@ -153,12 +154,9 @@ def periodicize(sys, mirror=False):
                     for i in range(3)
                 ])
             # Change the residue so that it is identified as separate
-            new_bub['residue'] = 'OUT'
+            new_bub['residue'] = bubble['residue']
             # Change the chain name so that it's identified as separate
-            if bubble['chain'] != 'E':
-                new_bub['chain'] = 'B'
-            else:
-                new_bub['chain'] = 'E'
+            new_bub['chain'] = chain
             # Add the bubble to the list
             bubbles.append(new_bub)
 

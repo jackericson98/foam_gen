@@ -101,20 +101,22 @@ def find_bubs(bubble_radii, num_boxes, cube_width, sub_box_size, max_bub_radius,
         if break_all:
             break
         # Set the default residue and chain
-        residue, chain = 'BUB', 'A'
+        chain = '0'
         # # Check the location of the bubble
         # if any([my_loc[i] < bub_rad or my_loc[i] + bub_rad > cube_width for i in range(3)]):
         #     residue, chain = 'BUB', 'E'
         # Check that the element exists
         element = None
         name = str(hex(i))[2:]
+        res_name = 0
         if elements is not None:
             element = elements[i]
             name = elements[i]
+            res_name = str(hex(i))[2:]
 
         # Create the bubble
         bubbles.append({'chain': chain, 'loc': my_loc, 'rad': bub_rad, 'num': i, 'name': name, 'asurfs': [],
-                        'residue': residue, 'box': my_box, 'element': element})
+                        'residue': res_name, 'box': my_box, 'element': element})
         # Add the atom to the box
         try:
             bubble_matrix[my_box[0], my_box[1], my_box[2]].append(i)
