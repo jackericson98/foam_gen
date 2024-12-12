@@ -46,13 +46,14 @@ def write_pdb(sys, directory=None):
         os.chdir(directory)
     # Open the file for writing
     with open(sys.name + '.pdb', 'w') as pdb_file:
-        try:
-            # Write the header that lets vorpy know it is a foam pdb
-            pdb_file.write('REMARK foam_gen {:.3f} {} {} {} {}\n'.format(sys.box[1][1], sys.data['avg'], sys.data['std'], sys.data['num'], sys.data['den']))
-        except TypeError:
-            pass
-        except KeyError:
-            pass
+        # Write the header that lets vorpy know it is a foam pdb
+        pdb_file.write('REMARK foam_gen Box WHL = {:.3f}, Average Radius = {}, CV = {}, Number of Primary Balls = '
+                       '{}, Density = {}, Overlap Allowance = {}r, Distribution = {}, '
+                       'Periodic Boundary Conditions? = {}, Standardized Radii to Atomic? = {}\n'
+                       .format(sys.box[1][1], sys.data['avg'], sys.data['std'], sys.data['num'],
+                               sys.data['den'], sys.data['olp'], sys.data['dst'].capitalize(),
+                               sys.data['pbc'], sys.data['sar']))
+
         # Go through each atom in the system
         for i, a in sys.bubbles.iterrows():
             # Get the location string
