@@ -34,14 +34,6 @@ def record_density(bubbles, box, sub_box_size, bubble_matrix, max_bub_radius, n_
     return count / n_samples
 
 
-def wall_overlap(my_loc, bub, cube_width):
-    # Create the overlap tracking variable
-    # Check to see if the bubble overlaps with the wall
-    for k in range(3):
-        if my_loc[k] - bub < 0 or my_loc[k] + bub > cube_width:
-            return True
-
-
 @jit(nopython=True)
 def overlap(my_loc, bub, close_locs, close_rads, olp, box_side=None, periodic=True):
     # Loop through the close bubbles
@@ -57,8 +49,9 @@ def overlap(my_loc, bub, close_locs, close_rads, olp, box_side=None, periodic=Tr
     return False
 
 
-def find_bubs(bubble_radii, num_boxes, cube_width, sub_box_size, max_bub_radius, olap, n, print_actions, periodic=False,
+def find_bubs(bubble_radii, num_boxes, cube_width, sub_box_size, olap, n, print_actions, periodic=False,
               box_width=None, elements=None):
+    max_bub_radius = max(bubble_radii)
     # Create the bubble list
     bubbles = []
     # Instantiate the grid structure of lists is locations representing a grid
@@ -74,15 +67,15 @@ def find_bubs(bubble_radii, num_boxes, cube_width, sub_box_size, max_bub_radius,
         # Keep trying to place the bubble into a spot where it won't overlap
         while True:
             # Calculate a random bubble location
-            my_loc = random.rand(3) * cube_width
+            if periodic:
+                my_loc = random.rand(3) * cube_width
+            else:
+                my_loc = random.uniform(bub_rad, cube_width - bub_rad, 3)
             # Find the box that the bubble would belong to
             my_box = [int(my_loc[j] / sub_box_size[j]) for j in range(3)]
             # Place the first ball
             if len(bubbles) == 0:
                 break
-            # Check to see if the bubble overlaps with the wall
-            if not periodic and wall_overlap(my_loc, bub_rad, cube_width):
-                continue
             # Get the distance to the closest bubble
             num_cells = bub_rad + max_bub_radius
             # Find all bubbles within range of the
@@ -161,7 +154,7 @@ def make_foam(sys, print_actions):
     # Get the cell size
     sub_box_size = [round(cube_width / num_boxes, 3) for i in range(3)]
 
-    bubbles, sys.bubble_matrix = find_bubs(bubble_radii, num_boxes, cube_width, sub_box_size, max_bub_radius, olap, n,
+    bubbles, sys.bubble_matrix = find_bubs(bubble_radii, num_boxes, cube_width, sub_box_size, olap, n,
                                            print_actions, periodic=sys.data['pbc'], box_width=sys.box[1][0],
                                            elements=atom_names)
     # if olap > 0:
