@@ -50,7 +50,7 @@ def get_bubbles(ball_matrix, cells, sub_box_size, dist=0, periodic=False):
     """
 
     # Calculate the reach based on distance and sub-box size
-    reach = int(dist / min(sub_box_size)) + 1
+    reach = int(dist / min(sub_box_size)) + 4
 
     # Determine the size of the matrix grid
     n = ball_matrix[-1, -1, -1][0]
