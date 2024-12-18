@@ -95,7 +95,7 @@ class System:
         # Check for periodic flags for periodic boundary conditions
         if type(self.data['pbc']) is str and self.data['pbc'].lower() in {'true', 't', 'yes', '1'}:
             self.data['pbc'] = True
-        elif type(self.data['pbc']) is str and self.data['pbc'].lower() in {'false', 'f', '0', 'no'}:
+        elif type(self.data['pbc']) is str and self.data['pbc'].lower() in {'false', 'f', '0', 'no', 'false\r', 'false\n'}:
             self.data['pbc'] = False
 
         # Check for periodic flags for standardized atomic radii
