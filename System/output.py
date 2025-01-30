@@ -26,6 +26,7 @@ def output_all(sys, my_dir=None):
         my_dir = set_sys_dir('foam')
 
     write_pdb(sys, directory=my_dir)
+    write_balls(sys, directory=my_dir)
     write_pymol_atoms(sys, directory=my_dir)
     write_box(verts, file_name='retaining_box', directory=my_dir, radius=0.01 * sys.box[1][0])
 
@@ -68,6 +69,31 @@ def write_pdb(sys, directory=None):
             # Write the atom information
             pdb_file.write(pdb_line(ser_num=i, name=a['name'], res_name=a['residue'], chain=a['chain'], elem=elem,
                                     x=x, y=y, z=z, occ=occ, tfact=a['rad']))
+    # Change back to the starting directory
+    os.chdir(start_dir)
+
+def write_balls(sys, name='balls', directory=None):
+    # Make note of the starting directory
+    start_dir = os.getcwd()
+    # Change to the specified directory
+    if directory is not None:
+        os.chdir(directory)
+    # Open the file for writing
+    with open(name + '.txt', 'w') as balls_file:
+
+        # Go through each atom in the system
+        for i, a in sys.bubbles.iterrows():
+            # Get the location string
+            x, y, z = a['loc']
+            occ = 1
+            if a['element'] is not None:
+                elem = a['element']
+            else:
+                elem = 'h'
+                if a['residue'] == 'OUT':
+                    elem = 'n'
+            # Write the atom information
+            balls_file.write(f"{x: .4f} {y: .4f} {z: .4f} {a['rad']: .4f} # {i} {a['residue']} {a['chain']} {a['name']} {elem}\n")
     # Change back to the starting directory
     os.chdir(start_dir)
 
