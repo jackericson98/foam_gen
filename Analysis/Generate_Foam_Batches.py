@@ -29,7 +29,7 @@ if __name__ == '__main__':
     means = [1.0]
     cv_vals = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     density_vals = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]
-    olap_vals = [0.0]
+    olap_vals = [1.0]
     num_vals = [1000]
     pbc_vals = ['False']
     dist_vals = ['gamma']
@@ -69,7 +69,7 @@ if __name__ == '__main__':
         for i in range(count_dict[vals]):
             # Get the file number based on the counter so we know when a new file needs to start
             file_number = int(counter // (total_number_of_foams / number_of_files))
-            j = file_number + 1
+            j = counter // 220 + 1
 
             # Open the file we intend to write to
             with open(f'../foam_gen_{j}.sh', 'a') as foam_writer:
