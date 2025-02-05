@@ -80,7 +80,7 @@ def find_bubs(bubble_radii, num_boxes, cube_width, sub_box_size, olap, n, print_
             num_cells = bub_rad + max_bub_radius
             # Find all bubbles within range of the
             bub_ints = get_bubbles(ball_matrix=bubble_matrix, cells=my_box, sub_box_size=sub_box_size, dist=num_cells,
-                                   periodic=True)
+                                   periodic=periodic)
             close_bubs = [bubbles[_] for _ in bub_ints]
             if len(close_bubs) == 0:
                 break
