@@ -43,10 +43,15 @@ The simplest example of `foam_gen` is to run it from the terminal in the `foam_g
 ```bash
 python foam_gen.py
 ```
-From here a GUI will pop up with settings to choose from:
+This will trigger the foam_gen GUI:
 
+![GUI_Image](https://github.com/user-attachments/assets/b31fb1ec-0f2f-4fd3-8af5-a1d4a0a170b6)
+
+The GUI can then be used to define your foam and outputs. When ready select the `Create Foam` button and the foam will be created under the set paramaters. These paramaters are described below. 
 
 ## Parameters
+
+
 
 ## Outputs
 
