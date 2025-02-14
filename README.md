@@ -55,13 +55,6 @@ The GUI can then be used to define your foam and outputs. When ready select the 
 
 ## Outputs
 
-
-    cat annotated_contacts.txt | voronota expand-descriptors | column -t > expanded_table_of_contacts.txt
-
-
-
-
-
 ## Contributing
 
 
