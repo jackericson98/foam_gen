@@ -8,7 +8,7 @@ from scipy.interpolate import interp1d
 from scipy import stats
 import os
 from System.output import set_sys_dir, output_all
-from Visualize.GUI2 import settings_gui
+from Visualize.GUI2 import SettingsGUI
 from Visualize.mpl_visualize import plot_atoms, plt
 import scipy as sp
 from System.make_foam import make_foam
@@ -85,7 +85,8 @@ class System:
 
         # If we want to prompt the user
         else:
-            self.data = settings_gui()
+            self.gui = SettingsGUI()
+            self.data = self.gui.data
         # Check the open cell condition:
         if type(self.data['olp']) is str and self.data['olp'].lower() in ['true', 't', '1']:
             self.data['olp'] = 1.0

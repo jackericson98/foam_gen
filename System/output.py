@@ -26,8 +26,8 @@ def output_all(sys, my_dir=None):
         my_dir = set_sys_dir('foam')
 
     write_pdb(sys, directory=my_dir)
-    write_balls(sys, directory=my_dir)
-    write_pymol_atoms(sys, directory=my_dir)
+    write_txt(sys, directory=my_dir)
+    write_pymol_radii(sys, directory=my_dir)
     write_box(verts, file_name='retaining_box', directory=my_dir, radius=0.01 * sys.box[1][0])
 
 
@@ -72,40 +72,56 @@ def write_pdb(sys, directory=None):
     # Change back to the starting directory
     os.chdir(start_dir)
 
-def write_balls(sys, name='balls', directory=None):
+
+def write_txt(sys, name=None, directory=None, round_to=4):
+    """
+    Writes a txt file for the balls in the system. The balls are in the style of a Voronota balls file. If the
+    """
     # Make note of the starting directory
     start_dir = os.getcwd()
+
     # Change to the specified directory
     if directory is not None:
         os.chdir(directory)
+
+    # Set the file Name
+    if name is None:
+        name = sys.name
+
     # Open the file for writing
     with open(name + '.txt', 'w') as balls_file:
 
         # Go through each atom in the system
         for i, a in sys.bubbles.iterrows():
             # Get the location string
-            x, y, z = a['loc']
-            occ = 1
-            if a['element'] is not None:
-                elem = a['element']
-            else:
-                elem = 'h'
-                if a['residue'] == 'OUT':
-                    elem = 'n'
+            x, y, z = [round(_, round_to) for _ in a['loc']]
+
+            # Add the end values for the atom if they exist
+            vals = ' '.join([str(a[_]) if a[_] is not None else ' ' for _ in ['residue', 'chain', 'name', 'element']])
+
             # Write the atom information
-            balls_file.write(f"{x: .4f} {y: .4f} {z: .4f} {a['rad']: .4f} # {i} {a['residue']} {a['chain']} {a['name']} {elem}\n")
+            balls_file.write(f"{x} {y} {z} {round(a['rad'], round_to)} # {i} {vals}\n")
+
     # Change back to the starting directory
     os.chdir(start_dir)
 
 
-def write_pymol_atoms(sys, set_sol=True, directory=None, file_name=None):
+def write_pymol_radii(sys, set_sol=True, directory=None, file_name=None):
+
+    """
+    Writes the pymol script for the
+    """
+    # Get the current directory, so we can come back to it when done
     start_dir = os.getcwd()
+
+    # Change to the directory that the user set or just change to the system directory
     if directory is not None:
         os.chdir(directory)
     else:
         os.chdir(sys.dir)
+
     if file_name is None:
-        file_name = 'set_atoms.pml'
+        file_name = 'set_radii.pml'
     if not set_sol:
         file_name = file_name[:-4] + '_nosol.pml'
     # Create the file

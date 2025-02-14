@@ -79,3 +79,5 @@ def settings_gui():
     return data
 
 
+if __name__ == '__main__':
+    print(settings_gui())
