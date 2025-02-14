@@ -65,131 +65,149 @@ class HelpGUI:
         self.description.config(state='disabled')  # Set back to read-only
 
 
-def settings_gui():
-    # Function to collect values and update the data dictionary
-    global data
+class SettingsGUI:
+    def __init__(self):
+        # Function to collect values and update the data dictionary
+        global data
+        # Set up the root
+        self.root = tk.Tk()
+        # Main window
+        self.root.title("FoamGen")
+        self.root.geometry("375x485")  # Set the window size
+        # Styles
+        self.background_color = 'wheat'
+        self.foreground_color = 'black'
+        # Create the variables
+        self.create_fonts()
+        self.create_variables()
+        self.create_styles()
+        self.create_widgets()
+
+    def create_fonts(self):
+        self.title_font = font.Font(family="Cooper Black", size=25, weight='bold')
+        self.label_font = font.Font(family='Serif', size=10, weight='bold')
+        # Fonts
+        self.setting_labels_font = font.Font(family='Serif', size=10, weight='bold')
+        self.settings_font = font.Font(family='Serif', size=10)
+
+    def create_variables(self):
+        self.avg_var = tk.StringVar(value=str(data['avg']))
+        self.std_var = tk.StringVar(value=str(data['std']))
+        self.num_var = tk.StringVar(value=str(data['num']))
+        self.den_var = tk.StringVar(value=str(data['den']))
+        self.olp_var = tk.StringVar(value=str(data['olp']))
+        self.dst_var = tk.StringVar(value=data['dst'].capitalize())
+        self.pbc_var = tk.BooleanVar(value=data['pbc'])
+        self.sar_var = tk.BooleanVar(value=data['sar'])
+        self.dir_var = tk.StringVar(value=data['dir'])
+        self.dir_var_name = tk.StringVar(value="./foam_gen" + data['dir'][1:])
+
+    def create_styles(self):
+        style = ttk.Style(self.root)
+        style.configure("Custom.TLabel", background='wheat', foreground='black')
+        style.configure("Custom.TEntry", fieldbackground="white", foreground="black")
+        style.configure("Custom.TButton", background="lightblue", foreground="black")
+        style.configure("Custom.TCheckbutton", background='wheat', foreground='black')
 
     # Browse the folder request function
-    def browse_folder(browse_request="Choose Output Directory"):
+    def browse_folder(self, browse_request="Choose Output Directory"):
         my_folder = filedialog.askdirectory(title=browse_request)
-        dir_var.set(my_folder)
-        dir_var_name.set(my_folder if len(my_folder) < 47 else '...' + my_folder[-44:])
+        self.dir_var.set(my_folder)
+        self.dir_var_name.set(my_folder if len(my_folder) < 47 else '...' + my_folder[-44:])
 
-    def help_gui():
-        HelpGUI(root)
+    def help_gui(self):
+        HelpGUI(self.root)
 
-    def apply_values():
+    def apply_values(self):
         global data
         data = {
-            "avg": float(avg_var.get()),
-            "std": float(std_var.get()),
-            "num": int(num_var.get()),
-            "den": float(den_var.get()),
-            "olp": float(olp_var.get()),
-            "dst": dst_var.get().lower(),
-            "pbc": pbc_var.get(),
-            "sar": sar_var.get(),
-            "dir": dir_var.get() if os.path.exists(dir_var.get()) else None
+            "avg": float(self.avg_var.get()),
+            "std": float(self.std_var.get()),
+            "num": int(self.num_var.get()),
+            "den": float(self.den_var.get()),
+            "olp": float(self.olp_var.get()),
+            "dst": self.dst_var.get().lower(),
+            "pbc": self.pbc_var.get(),
+            "sar": self.sar_var.get(),
+            "dir": self.dir_var.get() if os.path.exists(self.dir_var.get()) else None
         }
-        root.destroy()
+        self.root.destroy()
 
     # Function to handle cancel
-    def cancel():
-        root.destroy()
+    def cancel(self):
+        self.root.destroy()
 
-    # Main window
-    root = tk.Tk()
-    root.title("FoamGen")
-    root.geometry("375x485")  # Set the window size
-    # Styles
-    background_color = 'wheat'
-    foreground_color = 'black'
-    # root.configure(bg=background_color)
+    def create_widgets(self):
+        # Create the title
+        test = ttk.Label(self.root, text='Foam Gen', font=self.title_font)
+        test.grid(row=0, column=1, columnspan=2, pady=15)
 
-    # Variables for storing input
-    avg_var = tk.StringVar(value=str(data['avg']))
-    std_var = tk.StringVar(value=str(data['std']))
-    num_var = tk.StringVar(value=str(data['num']))
-    den_var = tk.StringVar(value=str(data['den']))
-    olp_var = tk.StringVar(value=str(data['olp']))
-    dst_var = tk.StringVar(value=data['dst'].capitalize())
-    pbc_var = tk.BooleanVar(value=data['pbc'])
-    sar_var = tk.BooleanVar(value=data['sar'])
-    dir_var = tk.StringVar(value=data['dir'])
-    dir_var_name = tk.StringVar(value="./foam_gen" + data['dir'][1:])
-    
-    # Style
-    my_style = ttk.Style(root)
-    my_style.configure("Custom.TLabel", background=background_color, foreground=foreground_color)
+        # Padding on the right
+        ttk.Label(self.root, text=' ').grid(column=0, padx=10)
 
-    # Fonts
-    title_font = font.Font(family="Cooper Black", size=25, weight='bold')
-    setting_labels_font = font.Font(family='Serif', size=10, weight='bold')
-    settings_font = font.Font(family='Serif', size=10)
+        # Setting up the grid and padding
+        options = {'padx': 10, 'pady': 5}  # Common options for padding
 
-    # Create the title
-    test = ttk.Label(root, text='Foam Gen', font=title_font)
-    test.grid(row=0, column=1, columnspan=2, pady=15)
+        # Average Entry
+        ttk.Label(self.root, text="Average", font=self.setting_labels_font).grid(row=1, column=1, sticky='w', **options)
+        ttk.Entry(self.root, textvariable=self.avg_var).grid(row=1, column=2, **options)
 
-    # Padding on the right
-    ttk.Label(root, text=' ').grid(column=0, padx=10)
+        # Standard Deviation Entry
+        ttk.Label(self.root, text="CV", font=self.setting_labels_font).grid(row=2, column=1, sticky='w', **options)
+        ttk.Entry(self.root, textvariable=self.std_var).grid(row=2, column=2, **options)
 
-    # Setting up the grid and padding
-    options = {'padx': 10, 'pady': 5}  # Common options for padding
+        # Number Entry
+        ttk.Label(self.root, text="Number", font=self.setting_labels_font).grid(row=3, column=1, sticky='w', **options)
+        ttk.Entry(self.root, textvariable=self.num_var).grid(row=3, column=2, **options)
 
-    # Average Entry
-    ttk.Label(root, text="Average", font=setting_labels_font).grid(row=1, column=1, sticky='w', **options)
-    ttk.Entry(root, textvariable=avg_var).grid(row=1, column=2, **options)
+        # Density Entry/Slider
+        ttk.Label(self.root, text="Density", font=self.setting_labels_font).grid(row=4, column=1, sticky='w', **options)
+        ttk.Entry(self.root, textvariable=self.den_var).grid(row=4, column=2, **options)
 
-    # Standard Deviation Entry
-    ttk.Label(root, text="CV", font=setting_labels_font).grid(row=2, column=1, sticky='w', **options)
-    ttk.Entry(root, textvariable=std_var).grid(row=2, column=2, **options)
+        # Overlap Entry/Slider
+        ttk.Label(self.root, text="Overlap", font=self.setting_labels_font).grid(row=5, column=1, sticky='w', **options)
+        ttk.Entry(self.root, textvariable=self.olp_var).grid(row=5, column=2, **options)
 
-    # Number Entry
-    ttk.Label(root, text="Number", font=setting_labels_font).grid(row=3, column=1, sticky='w', **options)
-    ttk.Entry(root, textvariable=num_var).grid(row=3, column=2, **options)
+        # Distribution Dropdown
+        ttk.Label(self.root, text="Distribution", font=self.setting_labels_font).grid(row=6, column=1, sticky='w', **options)
+        dst_options = ["Gamma", "Log-Normal", "Weibull", "Normal", "Half-Normal", "Physical 1 (Devries)",
+                       "Physical 2 (Gal-Or)", "Physical 3 (Lemelich)"]
+        dst_menu = ttk.Combobox(self.root, textvariable=self.dst_var, values=dst_options, width=14, font=self.settings_font)
+        dst_menu.grid(row=6, column=2, **options)
+        dst_menu.current(dst_options.index(data['dst'].capitalize()))
 
-    # Density Entry/Slider
-    ttk.Label(root, text="Density", font=setting_labels_font).grid(row=4, column=1, sticky='w', **options)
-    ttk.Entry(root, textvariable=den_var).grid(row=4, column=2, **options)
+        # Periodic Boundary Condition Checkbox
+        ttk.Label(self.root, text="Periodic Boundary", font=self.setting_labels_font).grid(row=7, column=1, sticky='w',
+                                                                                      **options)
+        ttk.Checkbutton(self.root, variable=self.pbc_var).grid(row=7, column=2, **options)
 
-    # Overlap Entry/Slider
-    ttk.Label(root, text="Overlap", font=setting_labels_font).grid(row=5, column=1, sticky='w', **options)
-    ttk.Entry(root, textvariable=olp_var).grid(row=5, column=2, **options)
+        # Standardize Atomic Radii Checkbox
+        ttk.Label(self.root, text="Standardize Atomic Radii", font=self.setting_labels_font).grid(row=8, column=1,
+                                                                                             sticky='w', **options)
+        ttk.Checkbutton(self.root, variable=self.sar_var).grid(row=8, column=2, **options)
 
-    # Distribution Dropdown
-    ttk.Label(root, text="Distribution", font=setting_labels_font).grid(row=6, column=1, sticky='w', **options)
-    dst_options = ["Gamma", "Log-Normal", "Weibull", "Normal", "Half-Normal", "Physical 1 (Devries)",
-                   "Physical 2 (Gal-Or)", "Physical 3 (Lemelich)"]
-    dst_menu = ttk.Combobox(root, textvariable=dst_var, values=dst_options, width=14, font=settings_font)
-    dst_menu.grid(row=6, column=2, **options)
-    dst_menu.current(dst_options.index(data['dst'].capitalize()))
+        # Browse output directory
+        ttk.Label(self.root, text=" ").grid(row=9, pady=8)
+        ttk.Label(self.root, text="Output Directory:", font=self.setting_labels_font).grid(row=10, column=1, sticky='w',
+                                                                                      padx=10)
+        ttk.Button(self.root, text='Browse', command=self.browse_folder).grid(row=10, column=2, padx=10)
+        ttk.Label(self.root, textvariable=self.dir_var_name, font=self.settings_font).grid(row=11, column=1, columnspan=2,
+                                                                                 padx=10, sticky='w')
 
-    # Periodic Boundary Condition Checkbox
-    ttk.Label(root, text="Periodic Boundary", font=setting_labels_font).grid(row=7, column=1, sticky='w', **options)
-    ttk.Checkbutton(root, variable=pbc_var).grid(row=7, column=2, **options)
+        # Buttons
+        ttk.Label(self.root, text=" ").grid(row=12, pady=8)
+        ttk.Button(self.root, text="Help", command=self.help_gui).grid(row=13, column=1, sticky='w', pady=5)
+        ttk.Button(self.root, text="Cancel", command=self.cancel).grid(row=13, column=1, sticky='e', pady=5)
+        ttk.Button(self.root, text="Create Foam", command=self.apply_values).grid(row=13, column=2, sticky='e', **options)
 
-    # Standardize Atomic Radii Checkbox
-    ttk.Label(root, text="Standardize Atomic Radii", font=setting_labels_font).grid(row=8, column=1, sticky='w', **options)
-    ttk.Checkbutton(root, variable=sar_var).grid(row=8, column=2, **options)
+        # Run the GUI
+        self.root.mainloop()
 
-    # Browse output directory
-    ttk.Label(root, text=" ").grid(row=9, pady=8)
-    ttk.Label(root, text="Output Directory:", font=setting_labels_font).grid(row=10, column=1, sticky='w', padx=10)
-    ttk.Button(root, text='Browse', command=browse_folder).grid(row=10, column=2, padx=10)
-    ttk.Label(root, textvariable=dir_var_name, font=settings_font).grid(row=11, column=1, columnspan=2, padx=10, sticky='w')
+        return data
 
-    # Buttons
-    ttk.Label(root, text=" ").grid(row=12, pady=8)
-    ttk.Button(root, text="Help", command=help_gui).grid(row=13, column=1, sticky='w', pady=5)
-    ttk.Button(root, text="Cancel", command=cancel).grid(row=13, column=1, sticky='e', pady=5)
-    ttk.Button(root, text="Create Foam", command=apply_values).grid(row=13, column=2, sticky='e', **options)
 
-    # Run the GUI
-    root.mainloop()
 
-    return data
 
 
 if __name__ == '__main__':
-    print(settings_gui())
+    print(SettingsGUI())
