@@ -38,7 +38,7 @@ To get started with `foam_gen`, follow these steps:
 
 ## Usage
 
-The simplest example of `foam_gen` is to run it from the terminal in the `foam_gen` folder:
+To run `foam_gen` type the following into the terminal from the `foam_gen` directory:
 
 ```bash
 python foam_gen.py
@@ -54,6 +54,10 @@ The GUI can then be used to define your foam and outputs. When ready select the 
 
 
 ## Outputs
+
+There are 4 major outputs from a `foam_gen` run:
+
+1. A `.txt` file with the balls location and radii. This also holds information about the specific atoms in the grouping if the 
 
 ## Contributing
 
