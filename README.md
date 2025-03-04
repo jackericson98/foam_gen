@@ -7,7 +7,7 @@
 #
 
 
-Welcome to `foam_gen`, an interactive simulated foam generator. This project is designed to create 3-dimensional random ensembles of spheres, mimicking the bubbles in foam based on user-defined parameters. This program was initially designed to be used 
+Welcome to `foam_gen`, an interactive simulated foam generator. This project is designed to create 3-dimensional random ensembles of spheres, mimicking the bubbles in foam based on user-defined parameters. 
 
 ## Features
 
