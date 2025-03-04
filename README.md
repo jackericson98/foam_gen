@@ -65,9 +65,10 @@ The GUI can then be used to define your foam and outputs. When ready select the 
 
 There are 4 major outputs from a `foam_gen` run:
 
-1. A `.txt` file with the balls location and radii. This also holds information about the specific atoms in the grouping if the 
-
-## Contributing
+1. A `.txt` file with the balls' location and radii. This also holds information about the specific atoms in the grouping if the periodic boundary condition is selected.
+2. A `.pdb` file with the balls' location and radii. This file allows the balls to be viaualized in pymol. The radii are stored in the occupancy column of the file and the main balls are given the chain identified '0'.
+3. A set_balls.pml script. This allows the user to change the rdii of the balls in the pymol viewer to visualize them.
+4. A retaining_box.off file that shows the box the balls were initially placed in. This file can also be dragged and dropped into pymol for viewing.  
 
 
 ## License
