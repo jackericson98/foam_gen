@@ -5,7 +5,6 @@
 #### 2025
 
 #
-![Screenshot 2025-03-04 145327](https://github.com/user-attachments/assets/86a8847e-9f06-4b5c-8195-51655150bb34)
 
 
 Welcome to `foam_gen`, an interactive simulated foam generator. This project is designed to create 3-dimensional random ensembles of spheres, mimicking the bubbles in foam based on user-defined parameters. This program was initially designed to be used 
@@ -47,7 +46,7 @@ python foam_gen.py
 ```
 This will trigger the foam_gen GUI:
 
-![GUI_Image](https://github.com/user-attachments/assets/b31fb1ec-0f2f-4fd3-8af5-a1d4a0a170b6)
+![Screenshot 2025-03-04 145327](https://github.com/user-attachments/assets/86a8847e-9f06-4b5c-8195-51655150bb34)
 
 The GUI can then be used to define your foam and outputs. When ready select the `Create Foam` button and the foam will be created under the set paramaters. These paramaters are described below. 
 
