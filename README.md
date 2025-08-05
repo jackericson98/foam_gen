@@ -16,7 +16,17 @@ Welcome to `foam_gen`, an interactive simulated foam generator. This project is 
 
 ## Installation
 
-To get started with `foam_gen`, follow these steps:
+### From PyPI (Recommended)
+
+The easiest way to install `foam_gen` is from PyPI:
+
+```bash
+pip install foam_gen
+```
+
+### From Source
+
+To install from source, follow these steps:
 
 1. Clone the repository:
    ```bash
@@ -26,22 +36,38 @@ To get started with `foam_gen`, follow these steps:
    ```bash
    cd foam_gen
    ```
-4. Install the required dependencies:
+3. Install the package in development mode:
+   ```bash
+   pip install -e .
+   ```
+   
+   Or install the required dependencies:
    ```bash
    pip install -r requirements.txt
-   ```
-   or
-   
-   ```bash
-   python -m pip install -r requirements.txt
    ```
 
 ## Usage
 
-The simplest example of `foam_gen` is to run it from the terminal in the `foam_gen` folder:
+### Command Line Interface
+
+After installation, you can run `foam_gen` from anywhere using the command-line interface:
 
 ```bash
-python foam_gen.py
+foam_gen
+```
+
+Or run it as a Python module:
+
+```bash
+python -m foam_gen
+```
+
+### From Source
+
+If you installed from source, you can also run it from the project directory:
+
+```bash
+python foam_gen/__main__.py
 ```
 This will trigger the foam_gen GUI:
 
